@@ -3,13 +3,36 @@ package org.jtornadoweb;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 public class IOLoop {
 
-	// private final ExecutorService pool;
+	private class EventHandlerTask implements Runnable {
+
+		private final EventHandler handler;
+		private final SelectionKey key;
+
+		public EventHandlerTask(EventHandler ev, SelectionKey key) {
+			this.handler = ev;
+			this.key = key;
+		}
+
+		@Override
+		public void run() {
+			try {
+				handler.handleEvents(key.channel(), key);
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				// key.cancel();
+			}
+		}
+
+	}
 
 	private Map<SelectionKey, EventHandler> handlers;
 
@@ -19,27 +42,26 @@ public class IOLoop {
 	}
 
 	private final Selector selector;
+	private final ExecutorService pool;
 
-	public IOLoop() throws Exception {
+	public IOLoop(ExecutorService pool) throws Exception {
+		this.pool = pool;
 		this.selector = Selector.open();
 		this.handlers = new HashMap<SelectionKey, EventHandler>();
-		// this.pool = Executors.newFixedThreadPool(3);
+
 	}
 
 	public void start() throws Exception {
 
 		while (true) {
 
-			int timeout = 10000;
-			
-			if (handlers != null && !handlers.isEmpty())
-				timeout = 3;
-			
-				selector.select(3);
+			selector.select(1);
 
 			for (final SelectionKey key : selector.selectedKeys()) {
 				selector.selectedKeys().remove(key);
-
+				// EventHandlerTask task = new EventHandlerTask(
+				// (EventHandler) key.attachment(), key);
+				// pool.execute(task);
 				((EventHandler) key.attachment()).handleEvents(key.channel(),
 						key);
 			}
@@ -50,10 +72,9 @@ public class IOLoop {
 	public void removeHandler(SelectionKey key) {
 		this.handlers.remove(key);
 	}
-	
+
 	public void addHandler(AbstractSelectableChannel channel,
 			EventHandler eventHandler, int opts) throws Exception {
-
 		channel.configureBlocking(false);
 		channel.register(selector, opts, eventHandler);
 		handlers.put(channel.keyFor(selector), eventHandler);

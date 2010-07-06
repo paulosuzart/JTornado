@@ -105,8 +105,8 @@ public class IOStream implements EventHandler {
 	public void handleEvents(SelectableChannel channel, SelectionKey key)
 			throws Exception {
 		try {
-			if (!key.isValid())
-				throw new RuntimeException("Invalid SlectionKey");
+//			if (!key.isValid())
+//				throw new RuntimeException("Invalid SlectionKey");
 
 			if (key.isReadable()) {
 				this.handleRead();
