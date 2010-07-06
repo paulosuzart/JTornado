@@ -18,6 +18,28 @@ import javax.management.RuntimeErrorException;
 import org.jtornadoweb.IOLoop.EventHandler;
 import org.jtornadoweb.IOStream.StreamHandler;
 
+/**
+ * A primary Http Server that simply replies the HTTP content requested.<br>
+ * <p>
+ * 
+ * <pre>
+ * Usage: HttpServer server = new HttpServer(null, false, null, null);
+ * server.listen(8089);
+ * </pre>
+ * 
+ * </p>
+ * <p>
+ * Objects as instances of java.lang.Object are not defined yet and will be
+ * created with the same meaning for Tornado.
+ * 
+ * Each HttpConnection uses a thread available in the pool. The Http Server
+ * accepts connections in the main thread.
+ * </p>
+ * 
+ * 
+ * @author paulosuzart@gmail.com
+ * 
+ */
 public class HttpServer implements EventHandler {
 
 	private final Object requestCallback;
@@ -39,6 +61,13 @@ public class HttpServer implements EventHandler {
 		this.loop = new IOLoop();
 	}
 
+	/**
+	 * Binds the socket provided by the channel to a port. The backlog for the
+	 * bind is 128 connections just like in Tornado. Starts the IOLoop.
+	 * 
+	 * @param port
+	 * @throws Exception
+	 */
 	public void listen(int port) throws Exception {
 		serverSocketChannel = ServerSocketChannel.open();
 		final ServerSocket socket = serverSocketChannel.socket();
@@ -49,6 +78,11 @@ public class HttpServer implements EventHandler {
 		this.loop.start();
 	}
 
+	/**
+	 * Handles the events from selector. Actually accepts the connection and
+	 * After instantiate an HttpConnection - in a pooled Thread - tries to
+	 * accept (non-Blocking) an eventually new connection. Otherwise returns.
+	 */
 	@Override
 	public void handleEvents(SelectableChannel serverChannel, SelectionKey key) {
 
@@ -70,6 +104,13 @@ public class HttpServer implements EventHandler {
 
 	}
 
+	/**
+	 * Http connection responsible to parse HTTP content and call the
+	 * application.
+	 * 
+	 * @author paulosuzart@gmail.com
+	 * 
+	 */
 	public static class HttpConnection implements Runnable {
 
 		private final IOStream stream;
@@ -89,50 +130,55 @@ public class HttpServer implements EventHandler {
 
 		}
 
+		/**
+		 * Extracts the reader and reply to the client. <br>
+		 * TODO complete the implementation
+		 */
 		@Override
 		public void run() {
 			try {
 				stream.readUntil("\r\n\r\n", new StreamHandler() {
-					//HANDLE HEADERS
+					// HANDLE HEADERS
 					@Override
 					public void execute(String data) {
-							int eol = data.indexOf("\r\n");
-							String[] startLine = data.substring(0, eol).split(" ");
-							String method = startLine[0];
-							String uri = startLine[1];
-							String version = startLine[2];
+						int eol = data.indexOf("\r\n");
+						String[] startLine = data.substring(0, eol).split(" ");
+						String method = startLine[0];
+						String uri = startLine[1];
+						String version = startLine[2];
 
-							if (!version.startsWith("HTTP/"))
-								throw new RuntimeException(
-										"Malformed HTTP version in HTTP Request-Line");
+						if (!version.startsWith("HTTP/"))
+							throw new RuntimeException(
+									"Malformed HTTP version in HTTP Request-Line");
 
-							for (String line : data.substring(eol,
-									data.length() - 1).split("\r\n")) {
-								if (line.equals("") || line.equals("\r")) continue;
-								String[] header = line.split(": ");
-								headers.put(header[0], header[1]);
+						for (String line : data.substring(eol,
+								data.length() - 1).split("\r\n")) {
+							if (line.equals("") || line.equals("\r"))
+								continue;
+							String[] header = line.split(": ");
+							headers.put(header[0], header[1]);
 
-							}
+						}
 
-							int contentLength = 0; //Integer.valueOf(headers
-									//.get("Content-Lenght"));
-							if (contentLength > 0
-									&& contentLength > stream.getMaxBufferSize()) {
-								throw new RuntimeException(
-										"Content-Length too long");
-							}
+						int contentLength = 0; // Integer.valueOf(headers
+						// .get("Content-Lenght"));
+						if (contentLength > 0
+								&& contentLength > stream.getMaxBufferSize()) {
+							throw new RuntimeException(
+									"Content-Length too long");
+						}
 
-							//if (headers.get("Expect").equals("100-continue")) {
-							//	stream.write("HTTP/1.1 100 (Continue)\r\n\r\n");
-						//	}
+						// if (headers.get("Expect").equals("100-continue")) {
+						// stream.write("HTTP/1.1 100 (Continue)\r\n\r\n");
+						// }
 						// stream.readBytes(contentLen)
-							stream.write(data);
-							try {
-								stream.close();
-							} catch (Exception e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
+						stream.write(data);
+						try {
+							stream.close();
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 					}
 				});
 			} catch (Exception e) {
