@@ -52,22 +52,23 @@ public class IOLoop {
 
 		while (true) {
 
-			
 			selector.select(2);
 
 			Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
-			
-			while (iter.hasNext()){
+
+			while (iter.hasNext()) {
 				SelectionKey key = iter.next();
 				iter.remove();
-				if (!key.isAcceptable())
+				if (!key.isAcceptable()) {
 					this.removeHandler(key);
-//				 ((EventHandler) key.attachment()).handleEvents(key);
+					EventHandlerTask task = new EventHandlerTask(
+							(EventHandler) key.attachment(), key);
+					pool.execute(task);
 
-				EventHandlerTask task = new EventHandlerTask(
-						(EventHandler) key.attachment(), key);
-				pool.execute(task);
-				
+				} else {
+					((EventHandler) key.attachment()).handleEvents(key);
+				}
+
 			}
 			// for (SelectionKey key : selector.selectedKeys()) {
 			//
