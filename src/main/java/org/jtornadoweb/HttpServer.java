@@ -205,19 +205,17 @@ public class HttpServer implements EventHandler {
 				// stream.readBytes(contentLen)
 
 				stream.write("HTTP/1.1 200 OK\r\nContent-Length: "
-						+ "Hello".getBytes().length + data.getBytes().length
-						+ "\r\n\r\n" + "Hello" + data);
+						+ "Hello\n".getBytes().length + data.getBytes().length
+						+ "\r\n\r\n" + "Hello\n");
 				stream.write(data);
 
 				try {
 					stream.close();
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 
