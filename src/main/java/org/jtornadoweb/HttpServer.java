@@ -96,21 +96,12 @@ public class HttpServer implements EventHandler {
 				SocketChannel clientChannel = ((ServerSocketChannel) key
 						.channel()).accept();
 				if (clientChannel == null) {
-					logger.info("##Accepted " + accepted + "in thread "
-							+ Thread.currentThread().getName());
 					return;
 				}
-
-				logger.info("Conn Accepted from "
-						+ clientChannel.socket().getInetAddress()
-								.getHostAddress());
 
 				IOStream stream = new IOStream(clientChannel, this.getLoop());
 				new HttpConnection(stream, "", requestCallback, noKeepAlive,
 						xHeaders);
-
-				logger.info("HttpConnection started");
-				logger.info(Thread.currentThread().getName());
 
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -187,8 +178,6 @@ public class HttpServer implements EventHandler {
 		public void execute(String data) {
 			try {
 
-				logger.info("Starting request serving");
-				logger.info("HEADER" + Thread.currentThread().getName());
 				int eol = data.indexOf("\r\n");
 				String[] startLine = data.substring(0, eol).split(" ");
 				String method = startLine[0];
@@ -219,7 +208,7 @@ public class HttpServer implements EventHandler {
 						+ "Hello".getBytes().length + data.getBytes().length
 						+ "\r\n\r\n" + "Hello" + data);
 				stream.write(data);
-				logger.info("Request finished");
+
 				try {
 					stream.close();
 				} catch (Exception e) {
