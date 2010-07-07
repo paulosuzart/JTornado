@@ -1,9 +1,8 @@
-This project is intended to the Java version of Tornado web.
+This project is intended to be the Java version of Tornado web.
 
-By now its an extremaly ugly chunk of code that will get some shape soon.
+By now its an extremaly ugly chunk of code that will get some shape soon replying you HTTP request in a 1k/s rate.
 
 A simples groovy script starting a server would be:
-
 ::
     import org.jtornadoweb.HttpServer
 
