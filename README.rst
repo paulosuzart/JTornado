@@ -7,7 +7,7 @@ A simples groovy script starting a server would be:
     import org.jtornadoweb.HttpServer
 
     server = new HttpServer(null, false, null, null)
-    server.listen(8089);
+    server.listen(8089)
 
 And then:
 ::
