@@ -1,6 +1,8 @@
 This project is intended to be the Java version of Tornado web.
 
 By now its an extremaly ugly chunk of code that will get some shape soon replying you HTTP request in a 1k/s rate.
+We do recommend run it on linux 2.6 to take advantage of epoll(http://linux.die.net/man/4/epoll)
+
 
 A simples groovy script starting a server would be (myServer.groovy):
 ::
