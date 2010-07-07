@@ -190,7 +190,8 @@ public class HttpServer implements EventHandler {
 
 				HttpHeaders headers = HttpHeaders.parse(data.substring(eol,
 						data.length() - 1));
-
+				//TODO instantiate HttpRequest 
+				
 				int contentLength = 0;
 				Integer.valueOf(headers.get("Content-Lenght", "0"));
 
