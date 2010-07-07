@@ -121,6 +121,38 @@ public class HttpServer implements EventHandler {
 	}
 
 	/**
+	 * Holds a set of http headers. Incomming headers should not be modified.
+	 * 
+	 * @author paulosuzart@gmail.com
+	 * 
+	 */
+	public static class HttpHeaders {
+
+		private Map<String, String> _headers = new HashMap<String, String>();
+
+		public static HttpHeaders parse(String header) {
+
+			HttpHeaders newHeaders = new HttpHeaders();
+
+			for (String line : header.split("\r\n")) {
+				if (line.equals("") || line.equals("\r"))
+					continue;
+				String[] h = line.split(": ");
+				newHeaders.put(h[0], h[1]);
+			}
+			return newHeaders;
+		}
+
+		public void put(String key, String value) {
+			_headers.put(key, value);
+		}
+
+		public String get(String key, String defualt) {
+			return _headers.containsKey(key) ? _headers.get(key) : defualt;
+		}
+	}
+
+	/**
 	 * Http connection responsible to parse HTTP content and call the
 	 * application.
 	 * 
@@ -135,7 +167,6 @@ public class HttpServer implements EventHandler {
 		private final Object requestCallback;
 		private final Boolean noKeepAlive;
 		private final Boolean xHeaders;
-		private Map<String, String> headers = new HashMap<String, String>();
 
 		public HttpConnection(IOStream stream, String address,
 				Object requestCallback, Boolean noKeepAlive, Boolean xHeaders)
@@ -168,26 +199,22 @@ public class HttpServer implements EventHandler {
 					throw new RuntimeException(
 							"Malformed HTTP version in HTTP Request-Line");
 
-				for (String line : data.substring(eol, data.length() - 1)
-						.split("\r\n")) {
-					if (line.equals("") || line.equals("\r"))
-						continue;
-					String[] header = line.split(": ");
-					headers.put(header[0], header[1]);
+				HttpHeaders headers = HttpHeaders.parse(data.substring(eol,
+						data.length() - 1));
 
-				}
+				int contentLength = 0;
+				Integer.valueOf(headers.get("Content-Lenght", "0"));
 
-				int contentLength = 0; // Integer.valueOf(headers
-				// .get("Content-Lenght"));
 				if (contentLength > 0
 						&& contentLength > stream.getMaxBufferSize()) {
 					throw new RuntimeException("Content-Length too long");
 				}
 
-				// if (headers.get("Expect").equals("100-continue")) {
-				// stream.write("HTTP/1.1 100 (Continue)\r\n\r\n");
-				// }
+				if (headers.get("Expect", "").equals("100-continue")) {
+					stream.write("HTTP/1.1 100 (Continue)\r\n\r\n");
+				}
 				// stream.readBytes(contentLen)
+
 				stream.write("HTTP/1.1 200 OK\r\nContent-Length: "
 						+ "Hello".getBytes().length + data.getBytes().length
 						+ "\r\n\r\n" + "Hello" + data);
