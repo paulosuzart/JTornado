@@ -16,33 +16,13 @@ public class IOStream implements EventHandler {
 		public void execute(String data);
 	}
 
-	private class ReadHandler implements EventHandler {
-
-		@Override
-		public void handleEvents(SelectionKey key) {
-
-		}
-
-	}
-
-	private class WriteHandler implements EventHandler {
-
-		@Override
-		public void handleEvents(SelectionKey key) {
-			// TODO Auto-generated method stub
-
-		}
-
-	}
-
 	private final SocketChannel client;
 	private final int maxBufferSize;
 	private final int readChunckSize;
 	private final ByteBuffer readBuffer;
 	private final ByteBuffer writeBuffer;
 	private String readDelimiter;
-	private final ReadHandler readHandler;
-	private final WriteHandler writeHandler;
+
 	private String delimiter;
 	private StreamHandler callback;
 	private IOLoop loop;
@@ -57,8 +37,6 @@ public class IOStream implements EventHandler {
 		this.readChunckSize = 8192;
 		this.readBuffer = ByteBuffer.allocate(readChunckSize);
 		this.writeBuffer = ByteBuffer.allocate(readChunckSize);
-		this.readHandler = new ReadHandler();
-		this.writeHandler = new WriteHandler();
 	}
 
 	public void readUntil(String delimiter, StreamHandler streamHandler)
@@ -99,15 +77,15 @@ public class IOStream implements EventHandler {
 
 	@Override
 	public void handleEvents(SelectionKey key) throws Exception {
-//		if (!key.isValid()) {
-//			throw new Exception("Invlid Key");
-//		}
+		// if (!key.isValid()) {
+		// throw new Exception("Invlid Key");
+		// }
 
-		//if (key.isReadable()) {
-			//key.cancel();
-			//loop.removeHandler(key);
-			this.handleRead();
-		//}
+		// if (key.isReadable()) {
+		// key.cancel();
+		// loop.removeHandler(key);
+		this.handleRead();
+		// }
 
 	}
 
