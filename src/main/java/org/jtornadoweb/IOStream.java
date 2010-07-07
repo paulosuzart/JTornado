@@ -56,7 +56,7 @@ public class IOStream implements EventHandler {
 		this.maxBufferSize = 104857600;
 		this.readChunckSize = 8192;
 		this.readBuffer = ByteBuffer.allocate(readChunckSize);
-		this.writeBuffer = null;
+		this.writeBuffer = ByteBuffer.allocate(readChunckSize);
 		this.readHandler = new ReadHandler();
 		this.writeHandler = new WriteHandler();
 	}
@@ -89,7 +89,9 @@ public class IOStream implements EventHandler {
 	public void write(String string) {
 
 		try {
-			this.client.write(ByteBuffer.wrap(string.getBytes()));
+			writeBuffer.put(string.getBytes()).flip();
+			this.client.write(writeBuffer);
+			writeBuffer.clear();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

@@ -5,7 +5,6 @@ import java.net.ServerSocket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -185,6 +184,7 @@ public class HttpServer implements EventHandler {
 				// stream.write("HTTP/1.1 100 (Continue)\r\n\r\n");
 				// }
 				// stream.readBytes(contentLen)
+				stream.write("HTTP/1.1 200 OK\r\nContent-Length: " + "Hello".getBytes().length + data.getBytes().length + "\r\n\r\n" + "Hello" + data);
 				stream.write(data);
 				logger.info("Request finished");
 				try {
@@ -202,9 +202,6 @@ public class HttpServer implements EventHandler {
 		}
 	}
 
-	public static void main(String[] args) throws Exception {
-		HttpServer server = new HttpServer(null, false, null, null);
-		server.listen(8089);
-	}
+
 
 }

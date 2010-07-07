@@ -3,9 +3,8 @@ package org.jtornadoweb;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.spi.AbstractSelectableChannel;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 
 public class IOLoop {
@@ -35,8 +34,6 @@ public class IOLoop {
 
 	private HashSet<SelectionKey> handlers;
 
-	// private Map<SelectionKey, EventHandler> handlers;
-
 	public static interface EventHandler {
 		public void handleEvents(SelectionKey key) throws Exception;
 	}
@@ -47,7 +44,6 @@ public class IOLoop {
 	public IOLoop(ExecutorService pool) throws Exception {
 		this.pool = pool;
 		this.selector = Selector.open();
-		// this.handlers = new HashMap<SelectionKey, EventHandler>();
 		this.handlers = new HashSet<SelectionKey>();
 
 	}
@@ -56,21 +52,36 @@ public class IOLoop {
 
 		while (true) {
 
-			selector.select(1);
 			
-			for (SelectionKey key : selector.selectedKeys()) {
+			selector.select(2);
 
-				selector.selectedKeys().remove(key);
-
+			Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
+			
+			while (iter.hasNext()){
+				SelectionKey key = iter.next();
+				iter.remove();
 				if (!key.isAcceptable())
 					this.removeHandler(key);
-				// ((EventHandler) key.attachment()).handleEvents(key);
+//				 ((EventHandler) key.attachment()).handleEvents(key);
 
 				EventHandlerTask task = new EventHandlerTask(
 						(EventHandler) key.attachment(), key);
 				pool.execute(task);
-
+				
 			}
+			// for (SelectionKey key : selector.selectedKeys()) {
+			//
+			// selector.selectedKeys().remove(key);
+			//
+			// if (!key.isAcceptable())
+			// this.removeHandler(key);
+			// // ((EventHandler) key.attachment()).handleEvents(key);
+			//
+			// EventHandlerTask task = new EventHandlerTask(
+			// (EventHandler) key.attachment(), key);
+			// pool.execute(task);
+			//
+			// }
 		}
 	}
 
