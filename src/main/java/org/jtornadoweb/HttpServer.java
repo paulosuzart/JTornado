@@ -89,25 +89,29 @@ public class HttpServer implements EventHandler {
 	 */
 	@Override
 	public void handleEvents(SelectionKey key) throws Exception {
-
+		int accepted = 0;
 		while (true) {
+			accepted++;
 			try {
 				SocketChannel clientChannel = ((ServerSocketChannel) key
 						.channel()).accept();
-				if (clientChannel == null)
+				if (clientChannel == null) {
+					logger.info("##Accepted " + accepted + "in thread "
+							+ Thread.currentThread().getName());
 					return;
-				
+				}
+
 				logger.info("Conn Accepted from "
 						+ clientChannel.socket().getInetAddress()
 								.getHostAddress());
-				
+
 				IOStream stream = new IOStream(clientChannel, this.getLoop());
 				new HttpConnection(stream, "", requestCallback, noKeepAlive,
 						xHeaders);
 
 				logger.info("HttpConnection started");
 				logger.info(Thread.currentThread().getName());
-				
+
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -184,7 +188,9 @@ public class HttpServer implements EventHandler {
 				// stream.write("HTTP/1.1 100 (Continue)\r\n\r\n");
 				// }
 				// stream.readBytes(contentLen)
-				stream.write("HTTP/1.1 200 OK\r\nContent-Length: " + "Hello".getBytes().length + data.getBytes().length + "\r\n\r\n" + "Hello" + data);
+				stream.write("HTTP/1.1 200 OK\r\nContent-Length: "
+						+ "Hello".getBytes().length + data.getBytes().length
+						+ "\r\n\r\n" + "Hello" + data);
 				stream.write(data);
 				logger.info("Request finished");
 				try {
@@ -201,7 +207,5 @@ public class HttpServer implements EventHandler {
 
 		}
 	}
-
-
 
 }
