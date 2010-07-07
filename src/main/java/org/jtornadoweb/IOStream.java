@@ -2,16 +2,13 @@ package org.jtornadoweb;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.CharBuffer;
-import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 
 import org.jtornadoweb.IOLoop.EventHandler;
-import org.jtornadoweb.IOStream.StreamHandler;
 
 public class IOStream implements EventHandler {
 
@@ -22,8 +19,7 @@ public class IOStream implements EventHandler {
 	private class ReadHandler implements EventHandler {
 
 		@Override
-		public void handleEvents(SelectableChannel serverChannel,
-				SelectionKey key) {
+		public void handleEvents(SelectionKey key) {
 
 		}
 
@@ -32,8 +28,7 @@ public class IOStream implements EventHandler {
 	private class WriteHandler implements EventHandler {
 
 		@Override
-		public void handleEvents(SelectableChannel serverChannel,
-				SelectionKey key) {
+		public void handleEvents(SelectionKey key) {
 			// TODO Auto-generated method stub
 
 		}
@@ -92,32 +87,27 @@ public class IOStream implements EventHandler {
 	}
 
 	public void write(String string) {
-		
+
 		try {
 			this.client.write(ByteBuffer.wrap(string.getBytes()));
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
 	@Override
-	public void handleEvents(SelectableChannel channel, SelectionKey key)
-			throws Exception {
-		try {
-//			if (!key.isValid())
-//				throw new RuntimeException("Invalid SlectionKey");
+	public void handleEvents(SelectionKey key) throws Exception {
+//		if (!key.isValid()) {
+//			throw new Exception("Invlid Key");
+//		}
 
-			if (key.isReadable()) {
-				this.handleRead();
-
-			}
-		} finally {
-			key.cancel();
-		}
+		//if (key.isReadable()) {
+			//key.cancel();
+			//loop.removeHandler(key);
+			this.handleRead();
+		//}
 
 	}
-	
 
 	private void handleRead() throws Exception {
 		client.read(readBuffer);
@@ -133,7 +123,7 @@ public class IOStream implements EventHandler {
 	public void close() throws Exception {
 		this.client.finishConnect();
 		this.client.close();
-		
+
 	}
 
 }
