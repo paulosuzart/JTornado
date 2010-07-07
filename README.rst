@@ -13,7 +13,7 @@ And then:
 ::
     groovy -cp JTornado-0.1-SNAPSHOT.jar myServer.groovy 
 
-Access http://localhost:8980 and you get something like:
+Access http://localhost:8089 and you get something like:
 ::
     Hello
     GET / HTTP/1.1
