@@ -57,7 +57,7 @@ public class IOLoop {
 		while (true) {
 
 			selector.select(1);
-
+			
 			for (SelectionKey key : selector.selectedKeys()) {
 
 				selector.selectedKeys().remove(key);
@@ -83,7 +83,7 @@ public class IOLoop {
 			EventHandler eventHandler, int opts) throws Exception {
 		channel.configureBlocking(false);
 		channel.register(selector, opts, eventHandler);
-		// handlers.put(channel.keyFor(selector), eventHandler);
+		// handlers.put(channpel.keyFor(selector), eventHandler);
 		handlers.add(channel.keyFor(selector));
 	}
 }
