@@ -1,10 +1,12 @@
 package org.jtornadoweb;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
@@ -91,16 +93,29 @@ public class IOStream implements EventHandler {
 
 	}
 
+	/**
+	 * If this code is being executed, the SO guarantees that there is at least
+	 * one byte to read. The channel is queried in slots of 4096bytes.
+	 * 
+	 * @throws Exception
+	 */
 	private void handleRead() throws Exception {
 
-		client.read(readBuffer);
-		Charset set = Charset.forName("UTF-8");
-		CharsetDecoder decoder = set.newDecoder();
-		ByteBuffer duplicate = readBuffer.duplicate();
-		duplicate.flip();
-		CharBuffer out = decoder.decode(duplicate);
-		decoder.flush(out);
-		callback.execute(out.toString());
+		int read = client.read(readBuffer);
+		StringBuffer sb = new StringBuffer(read);
+		CharBuffer out = CharBuffer.allocate(readChunckSize);
+		do {
+			Charset set = Charset.forName("UTF-8");
+			CharsetDecoder decoder = set.newDecoder();
+			readBuffer.flip();
+			decoder.decode(readBuffer, out, true);
+			//decoder.flush(out);
+			sb.append(out.flip().toString());
+			readBuffer.clear();
+			out.clear();
+		} while (client.read(readBuffer) > 0);
+
+		callback.execute(sb.toString());
 	}
 
 	public void close() throws Exception {
