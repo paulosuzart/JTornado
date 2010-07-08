@@ -15,9 +15,9 @@ JTornado uses a single thread to accept connections from clients using the defau
 (ServerSocketChannel or SocketChannel).
 Since its not possible to "fork()" the HttpServer like in python, any task - other than accepting connections - is executed in a thread pool (2 threads only). 
 
-We should move to simple ByteBuffers to Memory Mapped.
+We should move from simple ByteBuffers to Memory Mapped.
 
-**Changes may take place in this definition.**
+**Changes in the implementation happens all the time in this early stage.**
 
 ==============
 Sample
