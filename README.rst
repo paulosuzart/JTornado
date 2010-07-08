@@ -11,9 +11,11 @@ We do recommend run it on linux 2.6 to take advantage of `epoll`_.
 ==============
 Implementation
 ==============
-JTornado uses a linge thread to accept connections from clients using the default enviroment Selector to register its interests on the SelectableChannels
+JTornado uses a single thread to accept connections from clients using the default enviroment Selector to register its interests on the SelectableChannels
 (ServerSocketChannel or SocketChannel).
 Since its not possible to "fork()" the HttpServer like in python, any task - other than accepting connections - is executed in a thread pool (2 threads only). 
+
+We should move to simple ByteBuffers to Memory Mapped.
 
 **Changes may take place in this definition.**
 
