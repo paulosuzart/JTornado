@@ -1,8 +1,10 @@
 package org.jtornadoweb;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
@@ -35,7 +37,7 @@ public class IOStream implements EventHandler {
 		}
 		this.maxBufferSize = 104857600;
 		this.readChunckSize = 8192;
-		this.readBuffer = ByteBuffer.allocate(readChunckSize);
+		this.readBuffer = MappedByteBuffer.allocate(readChunckSize);
 		this.writeBuffer = ByteBuffer.allocate(readChunckSize);
 	}
 
@@ -90,6 +92,7 @@ public class IOStream implements EventHandler {
 	}
 
 	private void handleRead() throws Exception {
+
 		client.read(readBuffer);
 		Charset set = Charset.forName("UTF-8");
 		CharsetDecoder decoder = set.newDecoder();

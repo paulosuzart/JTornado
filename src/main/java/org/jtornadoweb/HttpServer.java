@@ -57,7 +57,8 @@ public class HttpServer implements EventHandler {
 		this.xHeaders = xHeaders;
 		this.serverSocketChannel = null;
 		logger.info("Thread poll fixed in 2 threads");
-		this.pool = Executors.newFixedThreadPool(2);
+		this.pool = Executors.newFixedThreadPool(Runtime.getRuntime()
+				.availableProcessors());
 		this.loop = (loop == null ? new IOLoop(pool) : loop);
 	}
 
@@ -190,8 +191,8 @@ public class HttpServer implements EventHandler {
 
 				HttpHeaders headers = HttpHeaders.parse(data.substring(eol,
 						data.length() - 1));
-				//TODO instantiate HttpRequest 
-				
+				// TODO instantiate HttpRequest
+
 				int contentLength = 0;
 				Integer.valueOf(headers.get("Content-Lenght", "0"));
 
