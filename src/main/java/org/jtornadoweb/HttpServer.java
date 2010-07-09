@@ -1,5 +1,6 @@
 package org.jtornadoweb;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.channels.SelectionKey;
@@ -102,7 +103,8 @@ public class HttpServer implements EventHandler {
 				}
 
 				IOStream stream = new IOStream(clientChannel, this.getLoop());
-				new HttpConnection(stream, "", requestCallback, noKeepAlive,
+				new HttpConnection(stream, clientChannel.socket()
+						.getInetAddress(), requestCallback, noKeepAlive,
 						xHeaders);
 
 			} catch (Exception e) {
@@ -156,16 +158,17 @@ public class HttpServer implements EventHandler {
 		private final Logger logger = Logger
 				.getLogger("org.jtornadoweb.HttpServer.HttpConnection");
 		private final IOStream stream;
-		private final String address;
+		private final InetAddress address;
 		private final Object requestCallback;
 		private final Boolean noKeepAlive;
 		private final Boolean xHeaders;
+		private HttpRequest httpRequest;
 
-		public HttpConnection(IOStream stream, String address,
+		public HttpConnection(IOStream stream, InetAddress inetAddress,
 				Object requestCallback, Boolean noKeepAlive, Boolean xHeaders)
 				throws Exception {
 			this.stream = stream;
-			this.address = address;
+			this.address = inetAddress;
 			this.requestCallback = requestCallback;
 			this.noKeepAlive = noKeepAlive;
 			this.xHeaders = xHeaders;
@@ -192,7 +195,10 @@ public class HttpServer implements EventHandler {
 
 				HttpHeaders headers = HttpHeaders.parse(data.substring(eol,
 						data.length() - 1));
-				// TODO instantiate HttpRequest
+
+				// TODO Handle the right protocol being used.
+//				httpRequest = new HttpRequest(this, method, uri, version,
+//						headers, "", address.getHostAddress(), "HTTP");
 
 				int contentLength = 0;
 				Integer.valueOf(headers.get("Content-Lenght", "0"));
@@ -224,6 +230,15 @@ public class HttpServer implements EventHandler {
 			}
 
 		}
+	}
+
+	/**
+	 * Represents a single HttpConnection.
+	 * 
+	 * @author paulosuzart@gmail.com
+	 * 
+	 */
+	public static class HttpRequest {
 	}
 
 }
