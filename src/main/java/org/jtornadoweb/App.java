@@ -6,7 +6,7 @@ package org.jtornadoweb;
  */
 public class App {
 	public static void main(String[] args) throws Exception {
-		HttpServer server = new HttpServer(null, false, null, null);
+		HttpServer server = new HttpServer(null, false, null, false);
 		server.listen(8089);
 	}
 }
