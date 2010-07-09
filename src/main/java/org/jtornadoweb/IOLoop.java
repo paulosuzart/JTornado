@@ -143,9 +143,16 @@ public class IOLoop {
 		}
 	}
 
+	/**
+	 * Every handler will be invoked once. If the handler has the interest to
+	 * keep informed about changes on its channels, thei mus register again see
+	 * {@link IOLoop#addHandler(AbstractSelectableChannel, EventHandler, int)}
+	 * 
+	 * @param key
+	 */
 	public void removeHandler(SelectionKey key) {
 		key.cancel();
-		this.handlers.remove(key);
+		//this.handlers.remove(key);
 	}
 
 	/**

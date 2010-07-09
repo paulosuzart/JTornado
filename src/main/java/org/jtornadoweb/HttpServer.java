@@ -42,15 +42,15 @@ public class HttpServer implements EventHandler {
 			.getLogger("org.jtornadoweb.HttpServer");
 
 	private final Object requestCallback;
-	private final Boolean noKeepAlive;
-	private final Boolean xHeaders;
+	private final boolean noKeepAlive;
+	private final boolean xHeaders;
 	private ServerSocketChannel serverSocketChannel;
 	private final ExecutorService pool;
 
 	private final IOLoop loop;
 
-	public HttpServer(Object requestCallback, Boolean noKeepAlive, IOLoop loop,
-			Boolean xHeaders) throws Exception {
+	public HttpServer(Object requestCallback, boolean noKeepAlive, IOLoop loop,
+			boolean xHeaders) throws Exception {
 		logger.info("Starting Http Server");
 		this.requestCallback = requestCallback;
 		logger.info("noKeepAlive: " + noKeepAlive);
@@ -160,12 +160,12 @@ public class HttpServer implements EventHandler {
 		private final IOStream stream;
 		private final InetAddress address;
 		private final Object requestCallback;
-		private final Boolean noKeepAlive;
-		private final Boolean xHeaders;
+		private final boolean noKeepAlive;
+		private final boolean xHeaders;
 		private HttpRequest httpRequest;
 
 		public HttpConnection(IOStream stream, InetAddress inetAddress,
-				Object requestCallback, Boolean noKeepAlive, Boolean xHeaders)
+				Object requestCallback, boolean noKeepAlive, boolean xHeaders)
 				throws Exception {
 			this.stream = stream;
 			this.address = inetAddress;
@@ -193,7 +193,7 @@ public class HttpServer implements EventHandler {
 					throw new RuntimeException(
 							"Malformed HTTP version in HTTP Request-Line");
 
-				HttpHeaders headers = HttpHeaders.parse(data.substring(eol,
+				HttpHeaders headers = HttpHeaders.parse(data.substring(eol + 1,
 						data.length() - 1));
 
 				httpRequest = new HttpRequest(method, uri, version, headers,
@@ -238,7 +238,7 @@ public class HttpServer implements EventHandler {
 	 * 
 	 */
 	public static class HttpRequest {
-		
+
 		String method;
 		String uri;
 		String version = "HTTP/1.0";
@@ -252,34 +252,33 @@ public class HttpServer implements EventHandler {
 		long startTime;
 		long finishTime;
 		Map<String, String> argumensts;
-		
+
 		public HttpRequest(String method, String uri, String version,
-				HttpHeaders headers, String remoteIp,
-				HttpConnection connection) {
+				HttpHeaders headers, String remoteIp, HttpConnection connection) {
 			this.method = method;
 			this.uri = uri;
 			this.version = version;
 			this.headers = headers;
-			
+
 			if (connection.xHeaders) {
-				//this.remoteIp = headers.get("X-Real-Ip", remoteIp);
+				// this.remoteIp = headers.get("X-Real-Ip", remoteIp);
 				this.protocol = headers.get("X-Scheme", protocol);
 			} else {
 				this.remoteIp = remoteIp;
 			}
 			protocol = protocol == null ? "http" : protocol;
-			
+
 			this.connection = connection;
 			this.startTime = System.currentTimeMillis();
-// TODO 
-//	        scheme, netloc, path, query, fragment = urlparse.urlsplit(uri)
-//          self.path = path
-//	        self.query = query
-//	        arguments = cgi.parse_qs(query)
-//	        self.arguments = {}
-//	        for name, values in arguments.iteritems():
-//	            values = [v for v in values if v]
-//	            if values: self.arguments[name] = values			
+			// TODO
+			// scheme, netloc, path, query, fragment = urlparse.urlsplit(uri)
+			// self.path = path
+			// self.query = query
+			// arguments = cgi.parse_qs(query)
+			// self.arguments = {}
+			// for name, values in arguments.iteritems():
+			// values = [v for v in values if v]
+			// if values: self.arguments[name] = values
 		}
 	}
 

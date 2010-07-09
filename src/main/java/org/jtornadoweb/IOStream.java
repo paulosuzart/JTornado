@@ -27,6 +27,7 @@ public class IOStream implements EventHandler {
 	private String delimiter;
 	private StreamHandler callback;
 	private IOLoop loop;
+	private final CharBuffer streamRead;
 
 	public IOStream(SocketChannel client, IOLoop loop) {
 		this.client = client;
@@ -38,6 +39,7 @@ public class IOStream implements EventHandler {
 		this.readChunckSize = 8192;
 		this.readBuffer = ByteBuffer.allocate(readChunckSize);
 		this.stream = CharBuffer.allocate(readChunckSize);
+		this.streamRead = stream.duplicate();
 		this.writeBuffer = ByteBuffer.allocate(readChunckSize);
 	}
 
@@ -88,7 +90,6 @@ public class IOStream implements EventHandler {
 	@Override
 	public void handleEvents(SelectionKey key) throws Exception {
 		this.handleRead();
-
 	}
 
 	/**
@@ -99,19 +100,36 @@ public class IOStream implements EventHandler {
 	 */
 	private void handleRead() throws Exception {
 
-		client.read(readBuffer);
+		readBuffer.mark();
+		streamRead.mark();
+		while (client.read(readBuffer) > 0) {
 
-		CharsetDecoder decoder = charSet.newDecoder();
+			CharsetDecoder decoder = charSet.newDecoder();
 
-		ByteBuffer dupReadBuffer = readBuffer.duplicate();
-		dupReadBuffer.flip();
+			ByteBuffer dupReadBuffer = readBuffer.duplicate();
+			dupReadBuffer.flip();
 
-		decoder.decode(dupReadBuffer, stream, true);
-		decoder.flush(stream);
+			decoder.decode(dupReadBuffer, streamRead, true);
+			decoder.flush(streamRead);
+		}
+		readBuffer.reset();
+		streamRead.reset();
 
+		// If delimiter is still present, callback should be excecuted if the
+		// content is found.
 		if (delimiter != null) {
-			callback.execute(find(delimiter));
-			return;
+
+			String found = find(delimiter);
+			if (found != "") {
+				StreamHandler cback = callback;
+				callback = null;
+				delimiter = null;
+				cback.execute(found);
+			} else {
+				// content not yet available. lets wait for it.
+				 loop.addHandler(client, this, SelectionKey.OP_READ);
+			}
+
 		}
 
 	}
@@ -125,22 +143,16 @@ public class IOStream implements EventHandler {
 	 * @return "" or the found string.
 	 */
 	private String find(String searchString) {
-		if (this.stream.position() < searchString.length() - 1)
-			return "";
 
-		try {
-			char[] _find = searchString.toCharArray();
-			char[] extract = new char[_find.length];
-			CharBuffer searchStream = stream.duplicate();
-			searchStream.flip();
-			do {
-				searchStream.get(extract);
-			} while (!Arrays.equals(extract, _find));
-			return searchStream.flip().toString();
-		} catch (Exception e) {
-			e.printStackTrace();
-			return "";
+		String sStream = stream.toString();
+		int index = sStream.indexOf(searchString);
+		if (index > -1) {
+			String found = sStream.substring(0, index + searchString.length());
+			int forwardPosition = index + delimiter.length();
+			stream.position(stream.position() + forwardPosition);
+			return found;
 		}
+		return "";
 
 	}
 
