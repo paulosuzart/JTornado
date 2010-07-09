@@ -41,6 +41,13 @@ public class IOStream implements EventHandler {
 		this.writeBuffer = ByteBuffer.allocate(readChunckSize);
 	}
 
+	/**
+	 * Invoke the callback if the given delimiter is found.
+	 * 
+	 * @param delimiter
+	 * @param callback
+	 * @throws Exception
+	 */
 	public void readUntil(String delimiter, StreamHandler callback)
 			throws Exception {
 
@@ -107,7 +114,6 @@ public class IOStream implements EventHandler {
 			return;
 		}
 
-		// callback.execute(stringBuffer.toString());
 	}
 
 	/**
@@ -122,15 +128,19 @@ public class IOStream implements EventHandler {
 		if (this.stream.position() < searchString.length() - 1)
 			return "";
 
-		char[] _find = searchString.toCharArray();
-		char[] extract = new char[_find.length];
-		CharBuffer searchStream = stream.duplicate();
-		searchStream.flip();
-		do {
-			searchStream.get(extract);
-		} while (!Arrays.equals(extract, _find));
-
-		return searchStream.flip().toString();
+		try {
+			char[] _find = searchString.toCharArray();
+			char[] extract = new char[_find.length];
+			CharBuffer searchStream = stream.duplicate();
+			searchStream.flip();
+			do {
+				searchStream.get(extract);
+			} while (!Arrays.equals(extract, _find));
+			return searchStream.flip().toString();
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "";
+		}
 
 	}
 

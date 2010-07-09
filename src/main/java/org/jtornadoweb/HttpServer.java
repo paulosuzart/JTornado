@@ -116,7 +116,7 @@ public class HttpServer implements EventHandler {
 	}
 
 	/**
-	 * Holds a set of http headers. Incomming headers should not be modified.
+	 * Holds a set of http headers. Incoming headers should not be modified.
 	 * 
 	 * @author paulosuzart@gmail.com
 	 * 
