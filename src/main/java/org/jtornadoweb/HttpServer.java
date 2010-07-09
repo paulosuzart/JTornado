@@ -196,9 +196,8 @@ public class HttpServer implements EventHandler {
 				HttpHeaders headers = HttpHeaders.parse(data.substring(eol,
 						data.length() - 1));
 
-				// TODO Handle the right protocol being used.
-//				httpRequest = new HttpRequest(this, method, uri, version,
-//						headers, "", address.getHostAddress(), "HTTP");
+				httpRequest = new HttpRequest(method, uri, version, headers,
+						address.getHostAddress(), this);
 
 				int contentLength = 0;
 				Integer.valueOf(headers.get("Content-Lenght", "0"));
@@ -239,6 +238,49 @@ public class HttpServer implements EventHandler {
 	 * 
 	 */
 	public static class HttpRequest {
+		
+		String method;
+		String uri;
+		String version = "HTTP/1.0";
+		HttpHeaders headers;
+		Object body; // TODO which type?
+		String remoteIp;
+		String protocol;
+		String host;
+		Object files; // TODO which type?
+		HttpConnection connection;
+		long startTime;
+		long finishTime;
+		Map<String, String> argumensts;
+		
+		public HttpRequest(String method, String uri, String version,
+				HttpHeaders headers, String remoteIp,
+				HttpConnection connection) {
+			this.method = method;
+			this.uri = uri;
+			this.version = version;
+			this.headers = headers;
+			
+			if (connection.xHeaders) {
+				//this.remoteIp = headers.get("X-Real-Ip", remoteIp);
+				this.protocol = headers.get("X-Scheme", protocol);
+			} else {
+				this.remoteIp = remoteIp;
+			}
+			protocol = protocol == null ? "http" : protocol;
+			
+			this.connection = connection;
+			this.startTime = System.currentTimeMillis();
+// TODO 
+//	        scheme, netloc, path, query, fragment = urlparse.urlsplit(uri)
+//          self.path = path
+//	        self.query = query
+//	        arguments = cgi.parse_qs(query)
+//	        self.arguments = {}
+//	        for name, values in arguments.iteritems():
+//	            values = [v for v in values if v]
+//	            if values: self.arguments[name] = values			
+		}
 	}
 
 }
