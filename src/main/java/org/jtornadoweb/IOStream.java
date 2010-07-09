@@ -1,16 +1,13 @@
 package org.jtornadoweb;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.util.Arrays;
 
 import org.jtornadoweb.IOLoop.EventHandler;
 
@@ -20,13 +17,13 @@ public class IOStream implements EventHandler {
 		public void execute(String data);
 	}
 
+	private static Charset charSet = Charset.forName("UTF-8");
 	private final SocketChannel client;
 	private final int maxBufferSize;
 	private final int readChunckSize;
 	private final ByteBuffer readBuffer;
 	private final ByteBuffer writeBuffer;
-	private String readDelimiter;
-
+	private final CharBuffer stream;
 	private String delimiter;
 	private StreamHandler callback;
 	private IOLoop loop;
@@ -39,22 +36,24 @@ public class IOStream implements EventHandler {
 		}
 		this.maxBufferSize = 104857600;
 		this.readChunckSize = 8192;
-		this.readBuffer = MappedByteBuffer.allocate(readChunckSize);
+		this.readBuffer = ByteBuffer.allocate(readChunckSize);
+		this.stream = CharBuffer.allocate(readChunckSize);
 		this.writeBuffer = ByteBuffer.allocate(readChunckSize);
 	}
 
-	public void readUntil(String delimiter, StreamHandler streamHandler)
+	public void readUntil(String delimiter, StreamHandler callback)
 			throws Exception {
-		String sStream = readBuffer.asCharBuffer().flip().toString();
-		int loc = sStream.indexOf(delimiter);
-		if (loc != -1) {
-			streamHandler.execute(sStream);
+
+		String found = find(delimiter);
+		if (found.length() > 0) {
+			callback.execute(found);
 			return;
 		}
 		checkClosed();
 		this.delimiter = delimiter;
-		this.callback = streamHandler;
+		this.callback = callback;
 		this.loop.addHandler(client, this, SelectionKey.OP_READ);
+
 	}
 
 	private void checkClosed() {
@@ -72,7 +71,7 @@ public class IOStream implements EventHandler {
 
 		try {
 			writeBuffer.put(string.getBytes()).flip();
-			this.client.write(writeBuffer);
+			client.write(writeBuffer);
 			writeBuffer.clear();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -81,45 +80,61 @@ public class IOStream implements EventHandler {
 
 	@Override
 	public void handleEvents(SelectionKey key) throws Exception {
-		// if (!key.isValid()) {
-		// throw new Exception("Invlid Key");
-		// }
-
-		// if (key.isReadable()) {
-		// key.cancel();
-		// loop.removeHandler(key);
 		this.handleRead();
-		// }
 
 	}
 
 	/**
 	 * If this code is being executed, the SO guarantees that there is at least
-	 * one byte to read. The channel is queried in slots of 4096bytes.
+	 * one byte to read. The channel is queried in slots of 8192 bytes. TODO
 	 * 
 	 * @throws Exception
 	 */
 	private void handleRead() throws Exception {
 
-		int read = client.read(readBuffer);
-		StringBuffer sb = new StringBuffer(read);
-		CharBuffer out = CharBuffer.allocate(readChunckSize);
-		do {
-			Charset set = Charset.forName("UTF-8");
-			CharsetDecoder decoder = set.newDecoder();
-			readBuffer.flip();
-			decoder.decode(readBuffer, out, true);
-			//decoder.flush(out);
-			sb.append(out.flip().toString());
-			readBuffer.clear();
-			out.clear();
-		} while (client.read(readBuffer) > 0);
+		client.read(readBuffer);
 
-		callback.execute(sb.toString());
+		CharsetDecoder decoder = charSet.newDecoder();
+
+		ByteBuffer dupReadBuffer = readBuffer.duplicate();
+		dupReadBuffer.flip();
+
+		decoder.decode(dupReadBuffer, stream, true);
+		decoder.flush(stream);
+
+		if (delimiter != null) {
+			callback.execute(find(delimiter));
+			return;
+		}
+
+		// callback.execute(stringBuffer.toString());
+	}
+
+	/**
+	 * Attempt to find the chars in the remaining chars of the current stream.
+	 * If the stream is not ready to be used (null) an "" are returned.
+	 * 
+	 * 
+	 * @param searchString
+	 * @return "" or the found string.
+	 */
+	private String find(String searchString) {
+		if (this.stream.position() < searchString.length() - 1)
+			return "";
+
+		char[] _find = searchString.toCharArray();
+		char[] extract = new char[_find.length];
+		CharBuffer searchStream = stream.duplicate();
+		searchStream.flip();
+		do {
+			searchStream.get(extract);
+		} while (!Arrays.equals(extract, _find));
+
+		return searchStream.flip().toString();
+
 	}
 
 	public void close() throws Exception {
-		this.client.finishConnect();
 		this.client.close();
 
 	}

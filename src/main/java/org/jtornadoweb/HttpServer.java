@@ -56,7 +56,8 @@ public class HttpServer implements EventHandler {
 		this.noKeepAlive = noKeepAlive;
 		this.xHeaders = xHeaders;
 		this.serverSocketChannel = null;
-		logger.info("Thread poll fixed in 2 threads");
+		logger.info("Thread poll fixed in "
+				+ Runtime.getRuntime().availableProcessors() + " threads");
 		this.pool = Executors.newFixedThreadPool(Runtime.getRuntime()
 				.availableProcessors());
 		this.loop = (loop == null ? new IOLoop(pool) : loop);
@@ -201,7 +202,8 @@ public class HttpServer implements EventHandler {
 					throw new RuntimeException("Content-Length too long");
 				}
 
-				if (headers.get("Expect", "").equals("100-continue")) {
+				if (contentLength > 0
+						&& headers.get("Expect", "").equals("100-continue")) {
 					stream.write("HTTP/1.1 100 (Continue)\r\n\r\n");
 				}
 				// stream.readBytes(contentLen)
