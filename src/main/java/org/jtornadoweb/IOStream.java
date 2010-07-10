@@ -3,12 +3,15 @@ package org.jtornadoweb;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 
 import org.jtornadoweb.IOLoop.EventHandler;
+
+import com.apple.crypto.provider.KeychainStore;
 
 public class IOStream implements EventHandler {
 
@@ -27,6 +30,9 @@ public class IOStream implements EventHandler {
 	private StreamHandler callback;
 	private IOLoop loop;
 	private final CharBuffer streamRead;
+	private StreamHandler writeHandler;
+	private boolean writing;
+	private boolean closing;
 
 	public IOStream(SocketChannel client, IOLoop loop) {
 		this.client = client;
@@ -94,8 +100,10 @@ public class IOStream implements EventHandler {
 			e.printStackTrace();
 		}
 	}
-	
-	public void write(byte[] bytes) {
+
+	public void write(byte[] bytes, StreamHandler handler) {
+		this.writing = true;
+		this.writeHandler = handler;
 		writeBuffer = ByteBuffer.wrap(bytes);
 		try {
 			loop.addHandler(client, this, SelectionKey.OP_WRITE);
@@ -105,22 +113,29 @@ public class IOStream implements EventHandler {
 	}
 
 	@Override
-	public void handleEvents(SelectionKey key) throws Exception {
-		if (key.isReadable()) {
-			key.cancel();
-			this.handleRead();			
-		} else if (key.isWritable()) {
-			key.cancel();
+	public void handleEvents(int opts, SelectableChannel channel)
+			throws Exception {
+		if (SelectionKey.OP_READ == opts) {
+			this.handleRead();
+		} else if (SelectionKey.OP_WRITE == opts) {
 			this.handleWrite();
 		}
-		
+
 	}
 
 	private void handleWrite() {
 		try {
 			client.write(writeBuffer);
 			writeBuffer.clear();
-		} catch (IOException e) {
+			this.writing = false;
+			if (this.closing) {
+				this.close();
+
+			} else {
+				writeHandler.execute("");
+			}
+
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
@@ -190,9 +205,12 @@ public class IOStream implements EventHandler {
 	}
 
 	public void close() throws Exception {
-		this.client.close();
+		if (this.writing) {
+			this.closing = true;
 
+		} else {
+			this.client.close();
+		}
 	}
-
 
 }

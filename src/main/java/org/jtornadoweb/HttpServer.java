@@ -3,6 +3,7 @@ package org.jtornadoweb;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -51,8 +52,8 @@ public class HttpServer implements EventHandler {
 
 	private final IOLoop loop;
 
-	public HttpServer(RequestCallback requestCallback, boolean noKeepAlive, IOLoop loop,
-			boolean xHeaders) throws Exception {
+	public HttpServer(RequestCallback requestCallback, boolean noKeepAlive,
+			IOLoop loop, boolean xHeaders) throws Exception {
 		logger.info("Starting Http Server");
 		this.requestCallback = requestCallback;
 		logger.info("noKeepAlive: " + noKeepAlive);
@@ -93,13 +94,14 @@ public class HttpServer implements EventHandler {
 	 * accept (non-Blocking) an eventually new connection. Otherwise returns.
 	 */
 	@Override
-	public void handleEvents(SelectionKey key) throws Exception {
+	public void handleEvents(int opts, SelectableChannel channel)
+			throws Exception {
 		int accepted = 0;
 		while (true) {
 			accepted++;
 			try {
-				SocketChannel clientChannel = ((ServerSocketChannel) key
-						.channel()).accept();
+				SocketChannel clientChannel = ((ServerSocketChannel) channel)
+						.accept();
 				if (clientChannel == null) {
 					return;
 				}
@@ -168,8 +170,8 @@ public class HttpServer implements EventHandler {
 		private String requestBody;
 
 		public HttpConnection(IOStream stream, InetAddress inetAddress,
-				RequestCallback requestCallback, boolean noKeepAlive, boolean xHeaders)
-				throws Exception {
+				RequestCallback requestCallback, boolean noKeepAlive,
+				boolean xHeaders) throws Exception {
 			this.stream = stream;
 			this.address = inetAddress;
 			this.requestCallback = requestCallback;
@@ -178,12 +180,16 @@ public class HttpServer implements EventHandler {
 			stream.readUntil("\r\n\r\n", this);
 		}
 
+		void finishRequest() throws Exception {
+			stream.close();
+		}
+
 		/**
 		 * Extracts the reader and reply to the client. <br>
 		 * TODO complete the implementation
 		 */
 		@Override
-		public void execute(String data) {//HTTPConnection._on_headers
+		public void execute(String data) {// HTTPConnection._on_headers
 			try {
 
 				int eol = data.indexOf("\r\n");
@@ -202,7 +208,8 @@ public class HttpServer implements EventHandler {
 				httpRequest = new HttpRequest(method, uri, version, headers,
 						address.getHostAddress(), this);
 
-				int contentLength = Integer.valueOf(headers.get("Content-Length", "0"));
+				int contentLength = Integer.valueOf(headers.get(
+						"Content-Length", "0"));
 
 				if (contentLength > 0) {
 
@@ -224,18 +231,12 @@ public class HttpServer implements EventHandler {
 					stream.readBytes(contentLength, onBody);
 				}
 
-				//stream.write("HTTP/1.1 200 OK\r\nContent-Length: "
-				//		+ "Hello\n".getBytes().length + data.getBytes().length
-				//		+ "\r\n\r\n" + "Hello\n");
-				//stream.write(data);
-				
-				requestCallback.execute(httpRequest);
+				// stream.write("HTTP/1.1 200 OK\r\nContent-Length: "
+				// + "Hello\n".getBytes().length + data.getBytes().length
+				// + "\r\n\r\n" + "Hello\n");
+				// stream.write(data);
 
-				try {
-					stream.close();
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+				requestCallback.execute(httpRequest);
 
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -249,15 +250,22 @@ public class HttpServer implements EventHandler {
 			if ("POST".equals(httpRequest.method)) {
 				if (contentType.startsWith("application/x-www-form-urlencoded")) {
 					Map<String, List<String>> arguments = null;
-					
+
 				}
 			}
 		}
 
 		public void write(byte[] bytes) {
-			stream.write(bytes);
+			StreamHandler handler = new StreamHandler() {
+				
+				@Override
+				public void execute(String data) throws Exception {
+					return;
+				}
+			};
+			stream.write(bytes, handler);
 		}
-		
+
 	}
 
 	/**
@@ -312,6 +320,16 @@ public class HttpServer implements EventHandler {
 
 		public void write(byte[] bytes) {
 			connection.write(bytes);
+		}
+
+		public void finish() {
+			try {
+				connection.finishRequest();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
 		}
 	}
 
