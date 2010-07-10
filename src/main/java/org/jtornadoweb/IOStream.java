@@ -21,7 +21,7 @@ public class IOStream implements EventHandler {
 	private final int maxBufferSize;
 	private final int readChunckSize;
 	private final ByteBuffer readBuffer;
-	private final ByteBuffer writeBuffer;
+	private ByteBuffer writeBuffer;
 	private final CharBuffer stream;
 	private String delimiter;
 	private StreamHandler callback;
@@ -94,10 +94,32 @@ public class IOStream implements EventHandler {
 			e.printStackTrace();
 		}
 	}
+	
+	public void write(byte[] bytes) {
+		writeBuffer = ByteBuffer.wrap(bytes);
+		try {
+			loop.addHandler(client, this, SelectionKey.OP_WRITE);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 	@Override
 	public void handleEvents(SelectionKey key) throws Exception {
-		this.handleRead();
+		if (key.isReadable()) {
+			this.handleRead();
+		} else if (key.isWritable()) {
+			this.handleWrite();
+		}
+	}
+
+	private void handleWrite() {
+		try {
+			client.write(writeBuffer);
+			writeBuffer.clear();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -168,5 +190,6 @@ public class IOStream implements EventHandler {
 		this.client.close();
 
 	}
+
 
 }

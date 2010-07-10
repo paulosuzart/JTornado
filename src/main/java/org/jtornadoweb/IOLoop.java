@@ -151,7 +151,7 @@ public class IOLoop {
 	 * @param key
 	 */
 	public void removeHandler(SelectionKey key) {
-		key.cancel();
+		//key.cancel();
 		//this.handlers.remove(key);
 	}
 

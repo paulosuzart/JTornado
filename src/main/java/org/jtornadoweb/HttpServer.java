@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 
 import org.jtornadoweb.IOLoop.EventHandler;
 import org.jtornadoweb.IOStream.StreamHandler;
+import org.jtornadoweb.Web.RequestCallback;
 
 /**
  * A primary Http Server that simply replies the HTTP content requested.<br>
@@ -42,7 +43,7 @@ public class HttpServer implements EventHandler {
 	private final Logger logger = Logger
 			.getLogger("org.jtornadoweb.HttpServer");
 
-	private final Object requestCallback;
+	private final RequestCallback requestCallback;
 	private final boolean noKeepAlive;
 	private final boolean xHeaders;
 	private ServerSocketChannel serverSocketChannel;
@@ -50,7 +51,7 @@ public class HttpServer implements EventHandler {
 
 	private final IOLoop loop;
 
-	public HttpServer(Object requestCallback, boolean noKeepAlive, IOLoop loop,
+	public HttpServer(RequestCallback requestCallback, boolean noKeepAlive, IOLoop loop,
 			boolean xHeaders) throws Exception {
 		logger.info("Starting Http Server");
 		this.requestCallback = requestCallback;
@@ -160,14 +161,14 @@ public class HttpServer implements EventHandler {
 				.getLogger("org.jtornadoweb.HttpServer.HttpConnection");
 		private final IOStream stream;
 		private final InetAddress address;
-		private final Object requestCallback;
+		private final RequestCallback requestCallback;
 		private final boolean noKeepAlive;
 		private final boolean xHeaders;
 		private HttpRequest httpRequest;
 		private String requestBody;
 
 		public HttpConnection(IOStream stream, InetAddress inetAddress,
-				Object requestCallback, boolean noKeepAlive, boolean xHeaders)
+				RequestCallback requestCallback, boolean noKeepAlive, boolean xHeaders)
 				throws Exception {
 			this.stream = stream;
 			this.address = inetAddress;
@@ -228,6 +229,8 @@ public class HttpServer implements EventHandler {
 				//		+ "Hello\n".getBytes().length + data.getBytes().length
 				//		+ "\r\n\r\n" + "Hello\n");
 				//stream.write(data);
+				
+				requestCallback.execute(httpRequest);
 
 				try {
 					stream.close();
@@ -251,6 +254,11 @@ public class HttpServer implements EventHandler {
 				}
 			}
 		}
+
+		public void write(byte[] bytes) {
+			stream.write(bytes);
+		}
+		
 	}
 
 	/**
@@ -301,6 +309,10 @@ public class HttpServer implements EventHandler {
 			// for name, values in arguments.iteritems():
 			// values = [v for v in values if v]
 			// if values: self.arguments[name] = values
+		}
+
+		public void write(byte[] bytes) {
+			connection.write(bytes);
 		}
 	}
 
