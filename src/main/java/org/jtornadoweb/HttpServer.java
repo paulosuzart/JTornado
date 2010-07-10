@@ -7,6 +7,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -163,6 +164,7 @@ public class HttpServer implements EventHandler {
 		private final boolean noKeepAlive;
 		private final boolean xHeaders;
 		private HttpRequest httpRequest;
+		private String requestBody;
 
 		public HttpConnection(IOStream stream, InetAddress inetAddress,
 				Object requestCallback, boolean noKeepAlive, boolean xHeaders)
@@ -199,17 +201,26 @@ public class HttpServer implements EventHandler {
 				httpRequest = new HttpRequest(method, uri, version, headers,
 						address.getHostAddress(), this);
 
-				int contentLength = 0;
-				Integer.valueOf(headers.get("Content-Lenght", "0"));
+				int contentLength = Integer.valueOf(headers.get("Content-Length", "0"));
 
-				if (contentLength > 0
-						&& contentLength > stream.getMaxBufferSize()) {
-					throw new RuntimeException("Content-Length too long");
-				}
+				if (contentLength > 0) {
 
-				if (contentLength > 0
-						&& headers.get("Expect", "").equals("100-continue")) {
-					stream.write("HTTP/1.1 100 (Continue)\r\n\r\n");
+					if (contentLength > stream.getMaxBufferSize()) {
+						throw new RuntimeException("Content-Length too long");
+					}
+
+					if (headers.get("Expect", "").equals("100-continue")) {
+						stream.write("HTTP/1.1 100 (Continue)\r\n\r\n");
+					}
+
+					StreamHandler onBody = new StreamHandler() {
+
+						@Override
+						public void execute(String data) throws Exception {
+							onRequestBody(data);
+						}
+					};
+					stream.readBytes(contentLength, onBody);
 				}
 				// stream.readBytes(contentLen)
 
@@ -228,6 +239,17 @@ public class HttpServer implements EventHandler {
 				e.printStackTrace();
 			}
 
+		}
+
+		private void onRequestBody(String data) throws Exception {
+			this.requestBody = data;
+			String contentType = httpRequest.headers.get("Content-Type", "");
+			if ("POST".equals(httpRequest.method)) {
+				if (contentType.startsWith("application/x-www-form-urlencoded")) {
+					Map<String, List<String>> arguments = null;
+					
+				}
+			}
 		}
 	}
 
