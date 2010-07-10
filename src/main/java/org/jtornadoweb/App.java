@@ -8,21 +8,29 @@ import org.jtornadoweb.Web.RequestHandler;
  * 
  */
 public class App {
-	
+
 	public static class MainHandler extends RequestHandler {
-		
+
 		@Override
 		protected void get() {
 			write("worked for first time :)");
 		}
+
+		@Override
+		protected void post() {
+			write("worked for POST too");
+		}
+
 	}
-	
+
 	public static void main(String[] args) throws Exception {
-		
-		Application application = new Application() {{
-			add("/main", MainHandler.class);
-		}};
-		
+
+		Application application = new Application() {
+			{
+				add("/main", MainHandler.class);
+			}
+		};
+
 		HttpServer server = new HttpServer(application, false, null, false);
 		server.listen(8089);
 	}

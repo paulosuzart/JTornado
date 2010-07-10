@@ -223,7 +223,6 @@ public class HttpServer implements EventHandler {
 					};
 					stream.readBytes(contentLength, onBody);
 				}
-				// stream.readBytes(contentLen)
 
 				//stream.write("HTTP/1.1 200 OK\r\nContent-Length: "
 				//		+ "Hello\n".getBytes().length + data.getBytes().length

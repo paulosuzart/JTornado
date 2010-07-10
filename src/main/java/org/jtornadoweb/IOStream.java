@@ -107,10 +107,13 @@ public class IOStream implements EventHandler {
 	@Override
 	public void handleEvents(SelectionKey key) throws Exception {
 		if (key.isReadable()) {
-			this.handleRead();
+			key.cancel();
+			this.handleRead();			
 		} else if (key.isWritable()) {
+			key.cancel();
 			this.handleWrite();
 		}
+		
 	}
 
 	private void handleWrite() {

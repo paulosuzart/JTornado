@@ -51,8 +51,10 @@ public class IOLoop {
 		 * Key to be executed running run();
 		 */
 		private final SelectionKey key;
+		private final EventHandler handler;
 
-		public EventHandlerTask(SelectionKey key) {
+		public EventHandlerTask(EventHandler handler, SelectionKey key) {
+			this.handler = handler;
 			this.key = key;
 		}
 
@@ -64,7 +66,8 @@ public class IOLoop {
 		@Override
 		public void run() {
 			try {
-				((EventHandler) key.attachment()).handleEvents(key);
+				handler.handleEvents(key);
+				key.cancel();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -129,9 +132,11 @@ public class IOLoop {
 			while (iter.hasNext()) {
 				SelectionKey key = iter.next();
 				iter.remove();
+				if (key.attachment() == null)
+					continue;
 				if (!key.isAcceptable()) {
+					EventHandlerTask task = new EventHandlerTask((EventHandler) key.attachment(), key);
 					this.removeHandler(key);
-					EventHandlerTask task = new EventHandlerTask(key);
 					pool.execute(task);
 				} else {
 					// events other than accept is handled in another thred.
@@ -151,8 +156,9 @@ public class IOLoop {
 	 * @param key
 	 */
 	public void removeHandler(SelectionKey key) {
-		//key.cancel();
-		//this.handlers.remove(key);
+		// key.cancel();
+		key.attach(null);
+		// this.handlers.remove(key);
 	}
 
 	/**
