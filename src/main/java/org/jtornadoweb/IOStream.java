@@ -7,14 +7,13 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
-import java.util.Arrays;
 
 import org.jtornadoweb.IOLoop.EventHandler;
 
 public class IOStream implements EventHandler {
 
 	static interface StreamHandler {
-		public void execute(String data);
+		public void execute(String data) throws Exception;
 	}
 
 	private static Charset charSet = Charset.forName("UTF-8");
@@ -65,6 +64,15 @@ public class IOStream implements EventHandler {
 
 	}
 
+	public void readBytes(int amount, StreamHandler callback) throws Exception {
+		streamRead.reset();
+		char[] _chars = new char[amount];
+		streamRead.get(_chars);
+		String data = new String(_chars);
+		callback.execute(data);
+
+	}
+
 	private void checkClosed() {
 		if (!this.client.isOpen()) {
 			throw new RuntimeException("Stream is closed");
@@ -100,8 +108,6 @@ public class IOStream implements EventHandler {
 	 */
 	private void handleRead() throws Exception {
 
-		readBuffer.mark();
-		streamRead.mark();
 		while (client.read(readBuffer) > 0) {
 
 			CharsetDecoder decoder = charSet.newDecoder();
@@ -109,11 +115,11 @@ public class IOStream implements EventHandler {
 			ByteBuffer dupReadBuffer = readBuffer.duplicate();
 			dupReadBuffer.flip();
 
-			decoder.decode(dupReadBuffer, streamRead, true);
-			decoder.flush(streamRead);
+			decoder.decode(dupReadBuffer, stream, true);
+			decoder.flush(stream);
 		}
-		readBuffer.reset();
-		streamRead.reset();
+		// readBuffer.reset();
+		// stream.reset();
 
 		// If delimiter is still present, callback should be excecuted if the
 		// content is found.
@@ -127,7 +133,7 @@ public class IOStream implements EventHandler {
 				cback.execute(found);
 			} else {
 				// content not yet available. lets wait for it.
-				 loop.addHandler(client, this, SelectionKey.OP_READ);
+				loop.addHandler(client, this, SelectionKey.OP_READ);
 			}
 
 		}
@@ -144,12 +150,14 @@ public class IOStream implements EventHandler {
 	 */
 	private String find(String searchString) {
 
-		String sStream = stream.toString();
+		String sStream = streamRead.toString();
 		int index = sStream.indexOf(searchString);
 		if (index > -1) {
+
 			String found = sStream.substring(0, index + searchString.length());
-			int forwardPosition = index + delimiter.length();
-			stream.position(stream.position() + forwardPosition);
+			int forwardPosition = index + searchString.length();
+			streamRead.position(forwardPosition);
+			streamRead.mark();
 			return found;
 		}
 		return "";
