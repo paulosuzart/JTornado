@@ -54,6 +54,10 @@ public class HttpServer implements EventHandler {
 
 	public HttpServer(RequestCallback requestCallback, boolean noKeepAlive,
 			IOLoop loop, boolean xHeaders) throws Exception {
+		if (requestCallback == null){
+			throw new Exception("RequestCallback required");
+		}
+		
 		logger.info("Starting Http Server");
 		this.requestCallback = requestCallback;
 		logger.info("noKeepAlive: " + noKeepAlive);

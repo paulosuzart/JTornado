@@ -78,8 +78,9 @@ public class Web {
 			this.handlers = new HashMap<Pattern, Class<? extends RequestHandler>>();
 		}
 
-		public void add(String uri, Class<? extends RequestHandler> handler) {
+		public Application add(String uri, Class<? extends RequestHandler> handler) {
 			this.handlers.put(Pattern.compile(uri), handler);
+			return this;
 		}
 
 		@Override

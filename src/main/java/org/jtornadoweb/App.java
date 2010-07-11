@@ -25,11 +25,7 @@ public class App {
 
 	public static void main(String[] args) throws Exception {
 
-		Application application = new Application() {
-			{
-				add("/main", MainHandler.class);
-			}
-		};
+		Application application = new Application().add("/", MainHandler.class);
 
 		HttpServer server = new HttpServer(application, false, null, false);
 		server.listen(8089);
