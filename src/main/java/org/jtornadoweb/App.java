@@ -18,7 +18,7 @@ public class App {
 
 		@Override
 		protected void post() {
-			write("worked for POST too");
+			write("worked for POST too\r\n");
 		}
 
 	}
