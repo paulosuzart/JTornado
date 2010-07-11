@@ -3,7 +3,7 @@ Intro
 ===========
 This project is intended to be the Java version of Tornado web.
 
-By now its an extremaly ugly chunk of code that will get some shape soon replying you what you specify in you RequestHander methods.
+By now its an extremaly ugly chunk of code that will get some shape soon replying you what you specify in you RequestHandler methods.
 We do recommend run it on linux 2.6 to take advantage of `epoll`_.
 
 .. _`epoll`: http://linux.die.net/man/4/epoll
