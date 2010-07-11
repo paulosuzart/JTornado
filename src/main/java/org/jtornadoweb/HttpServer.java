@@ -54,10 +54,10 @@ public class HttpServer implements EventHandler {
 
 	public HttpServer(RequestCallback requestCallback, boolean noKeepAlive,
 			IOLoop loop, boolean xHeaders) throws Exception {
-		if (requestCallback == null){
+		if (requestCallback == null) {
 			throw new Exception("RequestCallback required");
 		}
-		
+
 		logger.info("Starting Http Server");
 		this.requestCallback = requestCallback;
 		logger.info("noKeepAlive: " + noKeepAlive);
@@ -100,9 +100,8 @@ public class HttpServer implements EventHandler {
 	@Override
 	public void handleEvents(int opts, SelectableChannel channel)
 			throws Exception {
-		int accepted = 0;
+
 		while (true) {
-			accepted++;
 			try {
 				SocketChannel clientChannel = ((ServerSocketChannel) channel)
 						.accept();
@@ -261,7 +260,7 @@ public class HttpServer implements EventHandler {
 
 		public void write(byte[] bytes) {
 			StreamHandler handler = new StreamHandler() {
-				
+
 				@Override
 				public void execute(String data) throws Exception {
 					return;
@@ -311,6 +310,7 @@ public class HttpServer implements EventHandler {
 
 			this.connection = connection;
 			this.startTime = System.currentTimeMillis();
+
 			// TODO
 			// scheme, netloc, path, query, fragment = urlparse.urlsplit(uri)
 			// self.path = path
@@ -333,7 +333,7 @@ public class HttpServer implements EventHandler {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
+
 		}
 	}
 

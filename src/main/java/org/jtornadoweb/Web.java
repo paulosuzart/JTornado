@@ -26,6 +26,12 @@ public class Web {
 			// TODO throw HTTPError 500
 		}
 
+		protected String getArgument(String name, String defaultValue,
+				boolean strip) {
+			return null;
+
+		}
+
 		public void execute() {
 			if ("get".equals(request.method.toLowerCase())) {
 				get();
@@ -65,8 +71,9 @@ public class Web {
 	}
 
 	/**
-	 * new Application(){{ add("/", RequestHandler.class); add("/main",
-	 * MainHandler.class); }};
+	 * Application is responsible for mapping requests to appropriate
+	 * RequestHandler. Methods in this class may be used as a simple dsl: new
+	 * Application().add("/", MyRequestHandler.class).add(...);
 	 * 
 	 * @author rafaelfelini
 	 */
@@ -78,15 +85,20 @@ public class Web {
 			this.handlers = new HashMap<Pattern, Class<? extends RequestHandler>>();
 		}
 
-		public Application add(String uri, Class<? extends RequestHandler> handler) {
+		/**
+		 * Maps the given path pattern to a request handler.
+		 * 
+		 * @param uri
+		 * @param handler
+		 * @return
+		 */
+		public Application add(String uri,
+				Class<? extends RequestHandler> handler) {
 			this.handlers.put(Pattern.compile(uri), handler);
 			return this;
 		}
 
 		@Override
-		/**
-		 * __call__ in Application of web.py
-		 */
 		public void execute(HttpRequest request) {
 			String uri = request.uri;
 
@@ -106,6 +118,9 @@ public class Web {
 				}
 			}
 
+			if (handler == null) {
+				// handle not found.
+			}
 			handler.execute();
 		}
 
