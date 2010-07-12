@@ -136,8 +136,6 @@ public class IOLoop {
 			while (iter.hasNext()) {
 				SelectionKey key = iter.next();
 				iter.remove();
-				if (key.attachment() == null || !key.isValid())
-					continue;
 				if (key.isValid() && !key.isAcceptable()) {
 					EventHandlerTask task = new EventHandlerTask(
 							(EventHandler) key.attachment(), key.readyOps(), key.channel());
