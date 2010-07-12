@@ -4,12 +4,13 @@ import org.jtornadoweb.Web.RequestHandler;
 
 class MainHandler extends RequestHandler {
 
-		def get() {
+		
+                void get() {
 			write("worked for first time 'GET' :)\r\n")
 		}
 
 		
-		def post() {
+		void post() {
 			write("worked for POST too :D\r\n")
 		}
 
