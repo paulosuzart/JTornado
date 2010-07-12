@@ -6,8 +6,6 @@ import java.util.regex.Pattern;
 
 import org.jtornadoweb.HttpServer.HttpRequest;
 
-import quicktime.streaming.Stream;
-
 public class Web {
 
 	public static class RequestHandler {

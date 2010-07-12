@@ -11,8 +11,6 @@ import java.nio.charset.CharsetDecoder;
 
 import org.jtornadoweb.IOLoop.EventHandler;
 
-import com.apple.crypto.provider.KeychainStore;
-
 public class IOStream implements EventHandler {
 
 	static interface StreamHandler {
