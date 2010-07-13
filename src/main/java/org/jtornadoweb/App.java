@@ -1,5 +1,7 @@
 package org.jtornadoweb;
 
+import java.math.BigDecimal;
+
 import org.jtornadoweb.Web.Application;
 import org.jtornadoweb.Web.RequestHandler;
 
@@ -24,7 +26,6 @@ public class App {
 	}
 
 	public static void main(String[] args) throws Exception {
-
 		Application application = new Application().add("/", MainHandler.class);
 
 		HttpServer server = new HttpServer(application, false, null, false);

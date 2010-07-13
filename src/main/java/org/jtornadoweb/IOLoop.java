@@ -89,13 +89,14 @@ public class IOLoop {
 	 */
 	public static interface EventHandler {
 		/**
-		 * Handles the Selectable Channel. TODO Consider passing only the
-		 * channel. Provide a means to inform the user wich event it is.
+		 * Handles the Selectable Channel. opts means the current ready operations.  
 		 * 
-		 * @param key
+		 * @param opts
+		 * @param channel
 		 * @throws Exception
 		 */
 		public void handleEvents(int opts, SelectableChannel channel) throws Exception;
+		
 	}
 
 	/**

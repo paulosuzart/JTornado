@@ -1,12 +1,15 @@
 package org.jtornadoweb;
 
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.URI;
+import java.net.URLDecoder;
 import java.nio.channels.SelectableChannel;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +20,7 @@ import java.util.logging.Logger;
 import org.jtornadoweb.IOLoop.EventHandler;
 import org.jtornadoweb.IOStream.StreamHandler;
 import org.jtornadoweb.Web.RequestCallback;
+import org.jtornadoweb.util.HttpUtils;
 
 /**
  * A primary Http Server that simply replies the HTTP content requested.<br>
@@ -135,6 +139,8 @@ public class HttpServer implements EventHandler {
 		public static HttpHeaders parse(String header) {
 
 			HttpHeaders newHeaders = new HttpHeaders();
+			if (header == null || header.trim().length() == 0)
+				return newHeaders;
 
 			for (String line : header.split("\r\n")) {
 				if (line.equals("") || line.equals("\r"))
@@ -234,11 +240,6 @@ public class HttpServer implements EventHandler {
 					stream.readBytes(contentLength, onBody);
 				}
 
-				// stream.write("HTTP/1.1 200 OK\r\nContent-Length: "
-				// + "Hello\n".getBytes().length + data.getBytes().length
-				// + "\r\n\r\n" + "Hello\n");
-				// stream.write(data);
-
 				requestCallback.execute(httpRequest);
 
 			} catch (Exception e) {
@@ -291,10 +292,13 @@ public class HttpServer implements EventHandler {
 		HttpConnection connection;
 		long startTime;
 		long finishTime;
-		Map<String, String> argumensts;
+		Map<String, List<String>> argumensts;
+		private String query;
+		private String path;
 
 		public HttpRequest(String method, String uri, String version,
-				HttpHeaders headers, String remoteIp, HttpConnection connection) {
+				HttpHeaders headers, String remoteIp, HttpConnection connection)
+				throws Exception {
 			this.method = method;
 			this.uri = uri;
 			this.version = version;
@@ -311,6 +315,16 @@ public class HttpServer implements EventHandler {
 			this.connection = connection;
 			this.startTime = System.currentTimeMillis();
 
+			URI url = URI.create(uri);
+
+			query = url.getQuery();
+			String fragment = url.getFragment();
+			path = url.getPath();
+			String netloc = url.getHost();
+			String sheme = url.getScheme();
+			
+			argumensts = HttpUtils.getUrlParameters(uri);
+			
 			// TODO
 			// scheme, netloc, path, query, fragment = urlparse.urlsplit(uri)
 			// self.path = path
@@ -321,6 +335,8 @@ public class HttpServer implements EventHandler {
 			// values = [v for v in values if v]
 			// if values: self.arguments[name] = values
 		}
+
+	
 
 		public void write(byte[] bytes) {
 			connection.write(bytes);
