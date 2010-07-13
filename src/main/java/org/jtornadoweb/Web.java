@@ -1,6 +1,7 @@
 package org.jtornadoweb;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -26,6 +27,13 @@ public class Web {
 
 		protected String getArgument(String name, String defaultValue,
 				boolean strip) {
+			List<String> values = request.argumensts.get(name);
+			if (values == null || values.isEmpty()) {
+				if (defaultValue == null)
+					throw new RuntimeException("404, Missing Argument " + name);
+				return defaultValue;
+			}
+			String value = values.get(values.size() - 1).replaceAll("[\u0000-\u0008\u000E-\u001F]", " ");
 			return null;
 
 		}
