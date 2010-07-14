@@ -31,15 +31,15 @@ A simple groovy script starting a server would be (myServer.groovy)::
 
  class MainHandler extends RequestHandler {
 
+        void get() {
+		write("worked for first time :)\r\n")
+		write("name is: " + getArgument("name", "default", false) + "\r\n")
+	}
 
-                void get() {
-                        write("worked for first time 'GET' :)\r\n")
-                }
 
-
-                void post() {
-                        write("worked for POST too :D\r\n")
-                }
+        void post() {
+                write("worked for POST too :D\r\n")
+        }
 
  }
 

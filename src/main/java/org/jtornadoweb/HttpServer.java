@@ -292,9 +292,9 @@ public class HttpServer implements EventHandler {
 		HttpConnection connection;
 		long startTime;
 		long finishTime;
-		Map<String, List<String>> argumensts;
-		private String query;
-		private String path;
+		Map<String, List<String>> arguments;
+		String query;
+		String path;
 
 		public HttpRequest(String method, String uri, String version,
 				HttpHeaders headers, String remoteIp, HttpConnection connection)
@@ -323,7 +323,7 @@ public class HttpServer implements EventHandler {
 			String netloc = url.getHost();
 			String sheme = url.getScheme();
 			
-			argumensts = HttpUtils.getUrlParameters(uri);
+			arguments = HttpUtils.getUrlParameters(uri);
 			
 			// TODO
 			// scheme, netloc, path, query, fragment = urlparse.urlsplit(uri)

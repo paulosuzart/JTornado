@@ -15,7 +15,8 @@ public class App {
 
 		@Override
 		protected void get() {
-			write("worked for first time :)");
+			write("worked for first time :)\r\n");
+			write("name is: " + getArgument("name", "default", false) + "\r\n");
 		}
 
 		@Override

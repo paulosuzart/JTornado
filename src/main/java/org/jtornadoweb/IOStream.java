@@ -3,6 +3,7 @@ package org.jtornadoweb;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -43,7 +44,7 @@ public class IOStream implements EventHandler {
 		this.readBuffer = ByteBuffer.allocate(readChunckSize);
 		this.stream = CharBuffer.allocate(readChunckSize);
 		this.streamRead = stream.duplicate();
-		this.writeBuffer = ByteBuffer.allocate(readChunckSize);
+		this.writeBuffer = null;
 	}
 
 	/**
@@ -93,18 +94,21 @@ public class IOStream implements EventHandler {
 		try {
 			writeBuffer.put(string.getBytes()).flip();
 			client.write(writeBuffer);
-			writeBuffer.clear();
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
 	public void write(byte[] bytes, StreamHandler handler) {
-		this.writing = true;
-		this.writeHandler = handler;
+		writing = true;
+		writeHandler = handler;
 		writeBuffer = ByteBuffer.wrap(bytes);
 		try {
-			loop.addHandler(client, this, SelectionKey.OP_WRITE);
+			boolean listen = loop.addHandler(client, this,
+					SelectionKey.OP_WRITE);
+			if (!listen)
+				handleWrite();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -123,7 +127,8 @@ public class IOStream implements EventHandler {
 
 	private void handleWrite() {
 		try {
-			client.write(writeBuffer);
+			while(client.write(writeBuffer) > 0);
+			
 			writeBuffer.clear();
 			this.writing = false;
 			if (this.closing) {
@@ -205,7 +210,6 @@ public class IOStream implements EventHandler {
 	public void close() throws Exception {
 		if (this.writing) {
 			this.closing = true;
-
 		} else {
 			this.client.close();
 		}

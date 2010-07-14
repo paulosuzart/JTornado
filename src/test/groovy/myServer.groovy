@@ -5,8 +5,9 @@ import org.jtornadoweb.Web.RequestHandler;
 class MainHandler extends RequestHandler {
 
 		
-                void get() {
-			write("worked for first time 'GET' :)\r\n")
+        void get() {
+			write("worked for first time :)\r\n")
+			write("name is: " + getArgument("name", "default", false) + "\r\n")
 		}
 
 		

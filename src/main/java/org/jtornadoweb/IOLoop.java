@@ -1,5 +1,6 @@
 package org.jtornadoweb;
 
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -25,7 +26,7 @@ public class IOLoop {
 	/**
 	 * Default taimout before try to get selected keys from selector.
 	 */
-	public static int SELECT_TIMEOUT = 2;
+	public static int SELECT_TIMEOUT = 3;
 
 	/**
 	 * Receives a SelectionKey and executes its attachment. The attachment
@@ -55,7 +56,8 @@ public class IOLoop {
 		private final int opts;
 		private final SelectableChannel channel;
 
-		public EventHandlerTask(EventHandler handler, int opts, SelectableChannel channel) {
+		public EventHandlerTask(EventHandler handler, int opts,
+				SelectableChannel channel) {
 			this.handler = handler;
 			this.opts = opts;
 			this.channel = channel;
@@ -89,14 +91,16 @@ public class IOLoop {
 	 */
 	public static interface EventHandler {
 		/**
-		 * Handles the Selectable Channel. opts means the current ready operations.  
+		 * Handles the Selectable Channel. opts means the current ready
+		 * operations.
 		 * 
 		 * @param opts
 		 * @param channel
 		 * @throws Exception
 		 */
-		public void handleEvents(int opts, SelectableChannel channel) throws Exception;
-		
+		public void handleEvents(int opts, SelectableChannel channel)
+				throws Exception;
+
 	}
 
 	/**
@@ -114,6 +118,8 @@ public class IOLoop {
 	 */
 	private final ExecutorService pool;
 
+	private Selector writeSelector;
+
 	public IOLoop(ExecutorService pool) throws Exception {
 		this.pool = pool;
 		this.selector = Selector.open();
@@ -130,7 +136,9 @@ public class IOLoop {
 
 		while (true) {
 
-			selector.select(IOLoop.SELECT_TIMEOUT);
+			selector.selectNow();
+			if (selector.selectedKeys() == null || selector.selectedKeys().isEmpty())
+				Thread.sleep(IOLoop.SELECT_TIMEOUT);
 
 			Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
 
@@ -139,12 +147,14 @@ public class IOLoop {
 				iter.remove();
 				if (key.isValid() && !key.isAcceptable()) {
 					EventHandlerTask task = new EventHandlerTask(
-							(EventHandler) key.attachment(), key.readyOps(), key.channel());
+							(EventHandler) key.attachment(), key.readyOps(),
+							key.channel());
 					this.removeHandler(key);
 					pool.execute(task);
 				} else if (key.isValid()) {
 					// events other than accept is handled in another thred.
-					((EventHandler) key.attachment()).handleEvents(key.readyOps(), key.channel());
+					((EventHandler) key.attachment()).handleEvents(
+							key.readyOps(), key.channel());
 				}
 
 			}
@@ -161,7 +171,8 @@ public class IOLoop {
 	 */
 	public void removeHandler(SelectionKey key) {
 		key.cancel();
-		key.attach(null);
+
+		// key.attach(null);
 		// this.handlers.remove(key);
 	}
 
@@ -176,10 +187,13 @@ public class IOLoop {
 	 * @param opts
 	 * @throws Exception
 	 */
-	public void addHandler(AbstractSelectableChannel channel,
+	public boolean addHandler(AbstractSelectableChannel channel,
 			EventHandler eventHandler, int opts) throws Exception {
+		if (channel.isRegistered())
+			return false;
 		channel.configureBlocking(false);
 		channel.register(selector, opts, eventHandler);
+		return true;
 		// handlers.put(channpel.keyFor(selector), eventHandler);
 		// handlers.add(channel.keyFor(selector));
 	}

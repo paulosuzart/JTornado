@@ -16,7 +16,7 @@
           <boolProp name="LoopController.continue_forever">false</boolProp>
           <stringProp name="LoopController.loops">1</stringProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.num_threads">10000</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
         <longProp name="ThreadGroup.start_time">1278517876000</longProp>
         <longProp name="ThreadGroup.end_time">1278517876000</longProp>
@@ -40,12 +40,12 @@
           </elementProp>
           <stringProp name="HTTPSampler.domain">localhost</stringProp>
           <stringProp name="HTTPSampler.port">8089</stringProp>
-          <stringProp name="HTTPSampler.connect_timeout">10</stringProp>
+          <stringProp name="HTTPSampler.connect_timeout">1</stringProp>
           <stringProp name="HTTPSampler.response_timeout"></stringProp>
           <stringProp name="HTTPSampler.protocol"></stringProp>
           <stringProp name="HTTPSampler.contentEncoding"></stringProp>
           <stringProp name="HTTPSampler.path">/</stringProp>
-          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
           <boolProp name="HTTPSampler.follow_redirects">false</boolProp>
           <boolProp name="HTTPSampler.auto_redirects">true</boolProp>
           <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
@@ -58,7 +58,7 @@
         </HTTPSampler>
         <hashTree>
           <ResultCollector guiclass="TableVisualizer" testclass="ResultCollector" testname="View Results in Table" enabled="true">
-            <boolProp name="ResultCollector.error_logging">true</boolProp>
+            <boolProp name="ResultCollector.error_logging">false</boolProp>
             <objProp>
               <name>saveConfig</name>
               <value class="SampleSaveConfiguration">
@@ -120,6 +120,15 @@
             </objProp>
             <stringProp name="filename"></stringProp>
           </ResultCollector>
+          <hashTree/>
+          <ResultSaver guiclass="ResultSaverGui" testclass="ResultSaver" testname="Save Responses to a file" enabled="true">
+            <stringProp name="TestPlan.comments">	</stringProp>
+            <stringProp name="FileSaver.filename">x</stringProp>
+            <boolProp name="FileSaver.errorsonly">false</boolProp>
+            <boolProp name="FileSaver.skipautonumber">false</boolProp>
+            <boolProp name="FileSaver.skipsuffix">false</boolProp>
+            <boolProp name="FileSaver.successonly">false</boolProp>
+          </ResultSaver>
           <hashTree/>
         </hashTree>
         <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report" enabled="true">
