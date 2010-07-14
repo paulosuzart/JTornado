@@ -1,15 +1,13 @@
 package org.jtornadoweb;
 
-import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
-import java.net.URLDecoder;
 import java.nio.channels.SelectableChannel;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,8 +85,7 @@ public class HttpServer implements EventHandler {
 		final ServerSocket socket = serverSocketChannel.socket();
 		socket.setReuseAddress(true);
 		socket.bind(new InetSocketAddress(port), 128);
-		this.getLoop().addHandler(serverSocketChannel, this,
-				serverSocketChannel.validOps());
+		this.getLoop().addHandler(serverSocketChannel, this, SelectionKey.OP_ACCEPT);
 		this.getLoop().start();
 	}
 
