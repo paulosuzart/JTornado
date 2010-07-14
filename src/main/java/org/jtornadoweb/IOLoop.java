@@ -135,10 +135,9 @@ public class IOLoop {
 	public void start() throws Exception {
 
 		while (true) {
-
-			selector.selectNow();
-			if (selector.selectedKeys() == null || selector.selectedKeys().isEmpty())
-				Thread.sleep(IOLoop.SELECT_TIMEOUT);
+			Thread.sleep(IOLoop.SELECT_TIMEOUT);
+			if (selector.selectNow() == 0)
+				continue;
 
 			Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
 
