@@ -51,11 +51,11 @@ A simple groovy script starting a server would be (myServer.groovy)::
 And then::
   
  curl -d "user=paulo&pass=hohoho" http://localhost:8089
- curl  http://localhost:8089
+ curl  http://localhost:8089/?name=paulo
 
 Will get (for each curl)::
  
  worked for POST too :D 
- worked for first time 'GET' :)
+ name is: paulo
 
 This sample can be found in the test folder. Try it!
