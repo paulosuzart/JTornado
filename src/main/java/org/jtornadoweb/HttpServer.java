@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.logging.Logger;
 
 import org.jtornadoweb.IOLoop.EventHandler;
@@ -54,6 +55,19 @@ public class HttpServer implements EventHandler {
 
 	private final IOLoop loop;
 
+	private static class TFactory implements ThreadFactory {
+		private int count;
+
+		@Override
+		public Thread newThread(Runnable r) {
+			Thread thread = new Thread();
+			thread.setName("JTornado Task-" + count++);
+			thread.setPriority(Thread.NORM_PRIORITY);
+			return thread;
+		}
+
+	}
+
 	public HttpServer(RequestCallback requestCallback, boolean noKeepAlive,
 			IOLoop loop, boolean xHeaders) throws Exception {
 		if (requestCallback == null) {
@@ -85,7 +99,8 @@ public class HttpServer implements EventHandler {
 		final ServerSocket socket = serverSocketChannel.socket();
 		socket.setReuseAddress(true);
 		socket.bind(new InetSocketAddress(port), 128);
-		this.getLoop().addHandler(serverSocketChannel, this, SelectionKey.OP_ACCEPT);
+		this.getLoop().addHandler(serverSocketChannel, this,
+				SelectionKey.OP_ACCEPT);
 		this.getLoop().start();
 	}
 
@@ -319,9 +334,9 @@ public class HttpServer implements EventHandler {
 			path = url.getPath();
 			String netloc = url.getHost();
 			String sheme = url.getScheme();
-			
+
 			arguments = HttpUtils.getUrlParameters(uri);
-			
+
 			// TODO
 			// scheme, netloc, path, query, fragment = urlparse.urlsplit(uri)
 			// self.path = path
@@ -332,8 +347,6 @@ public class HttpServer implements EventHandler {
 			// values = [v for v in values if v]
 			// if values: self.arguments[name] = values
 		}
-
-	
 
 		public void write(byte[] bytes) {
 			connection.write(bytes);

@@ -1,13 +1,17 @@
 package org.jtornadoweb;
 
-import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.spi.AbstractSelectableChannel;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -26,7 +30,7 @@ public class IOLoop {
 	/**
 	 * Default taimout before try to get selected keys from selector.
 	 */
-	public static int SELECT_TIMEOUT = 3;
+	public static int SELECT_TIMEOUT = 30;
 
 	/**
 	 * Receives a SelectionKey and executes its attachment. The attachment
@@ -106,7 +110,8 @@ public class IOLoop {
 	/**
 	 * Tracks all handlers added to selector.
 	 */
-	private HashSet<SelectionKey> handlers;
+	private Map<EventHandler, Object[]> handlers;
+	private Map<EventHandler, Object[]> registeredHandlers;
 
 	/**
 	 * Default system selector. <b>EPoll is highly recommended.</b>
@@ -123,7 +128,14 @@ public class IOLoop {
 	public IOLoop(ExecutorService pool) throws Exception {
 		this.pool = pool;
 		this.selector = Selector.open();
-		this.handlers = new HashSet<SelectionKey>();
+		this.handlers = new HashMap<EventHandler, Object[]>();
+		this.registeredHandlers = new HashMap<EventHandler, Object[]>();
+
+		if (this.pool instanceof ThreadPoolExecutor) {
+			ThreadPoolExecutor tpool = ((ThreadPoolExecutor) this.pool);
+			tpool.setKeepAliveTime(10, TimeUnit.SECONDS);
+
+		}
 
 	}
 
@@ -133,14 +145,39 @@ public class IOLoop {
 	 * @throws Exception
 	 */
 	public void start() throws Exception {
-
+		int pollTimeout = SELECT_TIMEOUT;
+		List<EventHandlerTask> pendingTasks = new LinkedList<IOLoop.EventHandlerTask>();
 		while (true) {
-			Thread.sleep(IOLoop.SELECT_TIMEOUT);
-			if (selector.selectNow() == 0)
-				continue;
+
+			Iterator<EventHandlerTask> iterTask = pendingTasks.iterator();
+			while (iterTask.hasNext()) {
+				pool.execute(iterTask.next());
+				iterTask.remove();
+			}
+			Thread.yield();
+			// pool.awaitTermination(SELECT_TIMEOUT, TimeUnit.MILLISECONDS);
+
+			// Iterator<Object[]> iterAddedHandlers =
+			// handlers.values().iterator();
+			//
+			// synchronized (handlers) {
+			//
+			// while (iterAddedHandlers.hasNext()) {
+			// Object[] nextHandler = iterAddedHandlers.next();
+			// iterAddedHandlers.remove();
+			// registeredHandlers.put((EventHandler) nextHandler[1],
+			// nextHandler);
+			// // Why java is so ridiculous? where are tuples?
+			//
+			// ((SelectableChannel) nextHandler[0]).register(selector,
+			// (Integer) nextHandler[2], nextHandler[1]);
+			// pollTimeout = 0;
+			// }
+			// }
 
 			Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
-
+			if (iter.hasNext())
+				pollTimeout = 1;
 			while (iter.hasNext()) {
 				SelectionKey key = iter.next();
 				iter.remove();
@@ -149,7 +186,8 @@ public class IOLoop {
 							(EventHandler) key.attachment(), key.readyOps(),
 							key.channel());
 					this.removeHandler(key);
-					pool.execute(task);
+					pendingTasks.add(task);
+					Thread.yield();
 				} else if (key.isValid()) {
 					// events other than accept is handled in another thred.
 					((EventHandler) key.attachment()).handleEvents(
@@ -157,6 +195,12 @@ public class IOLoop {
 				}
 
 			}
+
+			selector.select(pollTimeout);
+			pollTimeout = IOLoop.SELECT_TIMEOUT;
+
+			// if (selector.selectNow() == 0)
+			// continue;
 
 		}
 	}
@@ -169,6 +213,7 @@ public class IOLoop {
 	 * @param key
 	 */
 	public void removeHandler(SelectionKey key) {
+		registeredHandlers.remove(key.attachment());
 		key.cancel();
 
 		// key.attach(null);
@@ -188,12 +233,17 @@ public class IOLoop {
 	 */
 	public boolean addHandler(AbstractSelectableChannel channel,
 			EventHandler eventHandler, int opts) throws Exception {
-		if (channel.isRegistered())
-			return false;
 		channel.configureBlocking(false);
+		selector.wakeup();
 		channel.register(selector, opts, eventHandler);
+
+		// synchronized (handlers) {
+		// handlers.put(eventHandler, new Object[] { channel, eventHandler,
+		// opts });
+		// }
+
 		return true;
 		// handlers.put(channpel.keyFor(selector), eventHandler);
-		// handlers.add(channel.keyFor(selector));
+
 	}
 }
