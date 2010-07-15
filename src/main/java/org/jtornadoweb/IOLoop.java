@@ -155,7 +155,10 @@ public class IOLoop {
 			Thread.yield();
 
 			Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
-			if (iter.hasNext())
+			if (iter.hasNext() || !pool.isTerminated()) // if has selected keys
+														// or poll is still
+														// executing the timeout
+														// is 1
 				pollTimeout = 1;
 			while (iter.hasNext()) {
 				SelectionKey key = iter.next();
