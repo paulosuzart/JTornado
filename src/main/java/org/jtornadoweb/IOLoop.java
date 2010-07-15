@@ -30,7 +30,7 @@ public class IOLoop {
 	/**
 	 * Default taimout before try to get selected keys from selector.
 	 */
-	public static int SELECT_TIMEOUT = 30;
+	public static int SELECT_TIMEOUT = 3000;
 
 	/**
 	 * Receives a SelectionKey and executes its attachment. The attachment
@@ -111,7 +111,6 @@ public class IOLoop {
 	 * Tracks all handlers added to selector.
 	 */
 	private Map<EventHandler, Object[]> handlers;
-	private Map<EventHandler, Object[]> registeredHandlers;
 
 	/**
 	 * Default system selector. <b>EPoll is highly recommended.</b>
@@ -129,7 +128,6 @@ public class IOLoop {
 		this.pool = pool;
 		this.selector = Selector.open();
 		this.handlers = new HashMap<EventHandler, Object[]>();
-		this.registeredHandlers = new HashMap<EventHandler, Object[]>();
 
 		if (this.pool instanceof ThreadPoolExecutor) {
 			ThreadPoolExecutor tpool = ((ThreadPoolExecutor) this.pool);
@@ -155,25 +153,6 @@ public class IOLoop {
 				iterTask.remove();
 			}
 			Thread.yield();
-			// pool.awaitTermination(SELECT_TIMEOUT, TimeUnit.MILLISECONDS);
-
-			// Iterator<Object[]> iterAddedHandlers =
-			// handlers.values().iterator();
-			//
-			// synchronized (handlers) {
-			//
-			// while (iterAddedHandlers.hasNext()) {
-			// Object[] nextHandler = iterAddedHandlers.next();
-			// iterAddedHandlers.remove();
-			// registeredHandlers.put((EventHandler) nextHandler[1],
-			// nextHandler);
-			// // Why java is so ridiculous? where are tuples?
-			//
-			// ((SelectableChannel) nextHandler[0]).register(selector,
-			// (Integer) nextHandler[2], nextHandler[1]);
-			// pollTimeout = 0;
-			// }
-			// }
 
 			Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
 			if (iter.hasNext())
@@ -199,9 +178,6 @@ public class IOLoop {
 			selector.select(pollTimeout);
 			pollTimeout = IOLoop.SELECT_TIMEOUT;
 
-			// if (selector.selectNow() == 0)
-			// continue;
-
 		}
 	}
 
@@ -213,7 +189,6 @@ public class IOLoop {
 	 * @param key
 	 */
 	public void removeHandler(SelectionKey key) {
-		registeredHandlers.remove(key.attachment());
 		key.cancel();
 
 		// key.attach(null);
@@ -236,14 +211,6 @@ public class IOLoop {
 		channel.configureBlocking(false);
 		selector.wakeup();
 		channel.register(selector, opts, eventHandler);
-
-		// synchronized (handlers) {
-		// handlers.put(eventHandler, new Object[] { channel, eventHandler,
-		// opts });
-		// }
-
 		return true;
-		// handlers.put(channpel.keyFor(selector), eventHandler);
-
 	}
 }
