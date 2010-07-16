@@ -86,6 +86,7 @@ public class HttpServer implements EventHandler {
 				+ Runtime.getRuntime().availableProcessors() + " threads");
 		this.pool = Executors.newFixedThreadPool(Runtime.getRuntime()
 				.availableProcessors());
+
 		this.loop = (loop == null ? new IOLoop(pool) : loop);
 	}
 
@@ -234,21 +235,24 @@ public class HttpServer implements EventHandler {
 			else {
 				String connectionHeader = request.headers.get("Connection");
 				if (request.supportsHttp11())
-					disconnect = connectionHeader != null && connectionHeader.equals("close");
+					disconnect = connectionHeader != null
+							&& connectionHeader.equals("close");
 				else if (request.headers.contains("Content-Length")
 						|| request.method.equals("GET")
 						|| request.method.equals("POST"))
-					disconnect = connectionHeader.equalsIgnoreCase("Keep-Alive");
+					disconnect = connectionHeader
+							.equalsIgnoreCase("Keep-Alive");
 				else
 					disconnect = true;
-				request = null;
-				requestFinished = false;
-				if (disconnect) {
-					stream.close();
-					return;
-				}
-				stream.readUntil("\r\n\r\n", onHeaders);
 			}
+			request = null;
+			requestFinished = false;
+			if (disconnect) {
+				stream.close();
+				return;
+			}
+			stream.readUntil("\r\n\r\n", onHeaders);
+
 		}
 
 		/**
@@ -268,7 +272,7 @@ public class HttpServer implements EventHandler {
 					throw new RuntimeException(
 							"Malformed HTTP version in HTTP Request-Line");
 
-				HttpHeaders headers = HttpHeaders.parse(data.substring(eol + 2 ,
+				HttpHeaders headers = HttpHeaders.parse(data.substring(eol + 2,
 						data.length() - 1));
 
 				request = new HttpRequest(method, uri, version, headers,
@@ -340,7 +344,7 @@ public class HttpServer implements EventHandler {
 			requestFinished = true;
 			if (!stream.writing)
 				finishRequest();
-			
+
 		}
 
 	}

@@ -54,7 +54,8 @@ public class Web {
 		
 		private Map<String, String> headers; //_headers in web.py
 
-		public RequestHandler(Application application, HttpRequest request) {
+		RequestHandler() {}
+		RequestHandler(Application application, HttpRequest request) {
 			this.application = application;
 			this.request = request;
 			this.autoFinish = true;

@@ -196,10 +196,10 @@ public class IOStream implements EventHandler {
 	 */
 	private String find(String searchString) {
 
+		streamRead.clear();
 		String sStream = streamRead.toString();
 		int index = sStream.indexOf(searchString);
 		if (index > -1) {
-
 			String found = sStream.substring(0, index + searchString.length());
 			int forwardPosition = index + searchString.length();
 			streamRead.position(forwardPosition);

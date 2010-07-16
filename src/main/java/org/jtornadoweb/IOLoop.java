@@ -1,6 +1,9 @@
 package org.jtornadoweb;
 
 import java.nio.channels.CancelledKeyException;
+import java.nio.channels.Pipe;
+import java.nio.channels.Pipe.SinkChannel;
+import java.nio.channels.Pipe.SourceChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -27,6 +30,8 @@ import java.util.concurrent.TimeUnit;
  * 
  */
 public class IOLoop {
+
+	private static final int MIN_SELECT_TIMEOUT = 1;
 
 	/**
 	 * Default taimout before try to get selected keys from selector.
@@ -78,7 +83,6 @@ public class IOLoop {
 		public void run() {
 			try {
 				handler.handleEvents(opts, channel);
-				// key.cancel();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -123,8 +127,6 @@ public class IOLoop {
 	 */
 	private final ExecutorService pool;
 
-	private Selector writeSelector;
-
 	public IOLoop(ExecutorService pool) throws Exception {
 		this.pool = pool;
 		this.selector = Selector.open();
@@ -133,7 +135,6 @@ public class IOLoop {
 		if (this.pool instanceof ThreadPoolExecutor) {
 			ThreadPoolExecutor tpool = ((ThreadPoolExecutor) this.pool);
 			tpool.setKeepAliveTime(10, TimeUnit.SECONDS);
-
 		}
 
 	}
@@ -155,14 +156,10 @@ public class IOLoop {
 			}
 			Thread.yield();
 
-			Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
-			// if has selected keys
-			// or poll is still
-			// executing the timeout
-			// is 1
+			if (!selector.selectedKeys().isEmpty() || !pool.isTerminated())
+				pollTimeout = MIN_SELECT_TIMEOUT;
 
-			if (iter.hasNext() || !pool.isTerminated())
-				pollTimeout = 1;
+			Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
 
 			while (iter.hasNext()) {
 				SelectionKey key = iter.next();
