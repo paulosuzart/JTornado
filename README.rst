@@ -1,7 +1,7 @@
 ===========
 Intro
 ===========
-This project strongly based on `Tornado`_, a HTTP server [#]_ with a simple yet powerfull webframework.
+This project strongly based on `Tornado`_, a HTTP server [1]_ with a simple yet powerfull webframework.
 
 By now its an extremaly ugly chunk of code that will get some shape soon replying you what you specify in you RequestHandler methods.
 We do recommend run it on linux 2.6 to take advantage of `epoll`_.
@@ -61,4 +61,4 @@ Will get (for each curl)::
 
 This sample can be found in the test folder. Try it!
 
-.. [#] Currently does not support Keep alive connections. So use true for noKeepAlive in new HttpServer()
+.. [1] Currently does not support Keep alive connections. So use true for noKeepAlive in new HttpServer()
