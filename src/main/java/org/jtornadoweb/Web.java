@@ -91,12 +91,12 @@ public class Web {
 		private void finish() {
 			flush();
 			request.finish();
+			finished = true;
 		}
 
 		private void flush() {
 			String headers = generateHeaders(false);
 			request.write((headers + writeBuffer).getBytes());
-
 		}
 
 		private String generateHeaders(boolean includeFooters) {

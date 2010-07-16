@@ -30,8 +30,9 @@ public class IOStream implements EventHandler {
 	private IOLoop loop;
 	private final CharBuffer streamRead;
 	private StreamHandler writeHandler;
-	private boolean writing;
-	private boolean closing;
+	boolean writing;
+	boolean closing;
+	boolean closed;
 
 	public IOStream(SocketChannel client, IOLoop loop) {
 		this.client = client;
@@ -59,7 +60,11 @@ public class IOStream implements EventHandler {
 
 		String found = find(delimiter);
 		if (found.length() > 0) {
+			try {
 			callback.execute(found);
+			} catch (Exception e) {
+				close();
+			}
 			return;
 		}
 		checkClosed();
@@ -161,8 +166,6 @@ public class IOStream implements EventHandler {
 			decoder.decode(dupReadBuffer, stream, true);
 			decoder.flush(stream);
 		}
-		// readBuffer.reset();
-		// stream.reset();
 
 		// If delimiter is still present, callback should be excecuted if the
 		// content is found.
@@ -212,7 +215,9 @@ public class IOStream implements EventHandler {
 			this.closing = true;
 		} else {
 			this.client.close();
+			this.closed = true;
 		}
 	}
+
 
 }

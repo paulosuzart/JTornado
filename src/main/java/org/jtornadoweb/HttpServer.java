@@ -21,6 +21,8 @@ import org.jtornadoweb.IOStream.StreamHandler;
 import org.jtornadoweb.Web.RequestCallback;
 import org.jtornadoweb.util.HttpUtils;
 
+import com.sun.corba.se.pept.transport.Connection;
+
 /**
  * A primary Http Server that simply replies the HTTP content requested.<br>
  * <p>
@@ -170,6 +172,20 @@ public class HttpServer implements EventHandler {
 		public String get(String key, String defualt) {
 			return _headers.containsKey(key) ? _headers.get(key) : defualt;
 		}
+
+		public String get(String name) {
+			return _headers.get(name);
+		}
+
+		/**
+		 * Returns true if the given name is a keu in _headers.
+		 * 
+		 * @param name
+		 * @return
+		 */
+		public boolean contains(String name) {
+			return _headers.containsKey(name);
+		}
 	}
 
 	/**
@@ -179,16 +195,26 @@ public class HttpServer implements EventHandler {
 	 * @author paulosuzart@gmail.com
 	 * 
 	 */
-	public static class HttpConnection implements StreamHandler {
+	public static class HttpConnection {
 		private final Logger logger = Logger
 				.getLogger("org.jtornadoweb.HttpServer.HttpConnection");
+
 		private final IOStream stream;
 		private final InetAddress address;
 		private final RequestCallback requestCallback;
 		private final boolean noKeepAlive;
 		private final boolean xHeaders;
-		private HttpRequest httpRequest;
+		private HttpRequest request;
 		private String requestBody;
+		private boolean requestFinished;
+
+		private StreamHandler onHeaders = new StreamHandler() {
+
+			@Override
+			public void execute(String data) throws Exception {
+				onHeaders(data);
+			}
+		};
 
 		public HttpConnection(IOStream stream, InetAddress inetAddress,
 				RequestCallback requestCallback, boolean noKeepAlive,
@@ -198,19 +224,38 @@ public class HttpServer implements EventHandler {
 			this.requestCallback = requestCallback;
 			this.noKeepAlive = noKeepAlive;
 			this.xHeaders = xHeaders;
-			stream.readUntil("\r\n\r\n", this);
+			stream.readUntil("\r\n\r\n", onHeaders);
 		}
 
 		void finishRequest() throws Exception {
-			stream.close();
+			boolean disconnect;
+			if (noKeepAlive)
+				disconnect = true;
+			else {
+				String connectionHeader = request.headers.get("Connection");
+				if (request.supportsHttp11())
+					disconnect = connectionHeader != null && connectionHeader.equals("close");
+				else if (request.headers.contains("Content-Length")
+						|| request.method.equals("GET")
+						|| request.method.equals("POST"))
+					disconnect = connectionHeader.equalsIgnoreCase("Keep-Alive");
+				else
+					disconnect = true;
+				request = null;
+				requestFinished = false;
+				if (disconnect) {
+					stream.close();
+					return;
+				}
+				stream.readUntil("\r\n\r\n", onHeaders);
+			}
 		}
 
 		/**
 		 * Extracts the reader and reply to the client. <br>
 		 * TODO complete the implementation
 		 */
-		@Override
-		public void execute(String data) {// HTTPConnection._on_headers
+		public void onHeaders(String data) {// HTTPConnection._on_headers
 			try {
 
 				int eol = data.indexOf("\r\n");
@@ -223,10 +268,10 @@ public class HttpServer implements EventHandler {
 					throw new RuntimeException(
 							"Malformed HTTP version in HTTP Request-Line");
 
-				HttpHeaders headers = HttpHeaders.parse(data.substring(eol + 1,
+				HttpHeaders headers = HttpHeaders.parse(data.substring(eol + 2 ,
 						data.length() - 1));
 
-				httpRequest = new HttpRequest(method, uri, version, headers,
+				request = new HttpRequest(method, uri, version, headers,
 						address.getHostAddress(), this);
 
 				int contentLength = Integer.valueOf(headers.get(
@@ -252,7 +297,7 @@ public class HttpServer implements EventHandler {
 					stream.readBytes(contentLength, onBody);
 				}
 
-				requestCallback.execute(httpRequest);
+				requestCallback.execute(request);
 
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -262,8 +307,8 @@ public class HttpServer implements EventHandler {
 
 		private void onRequestBody(String data) throws Exception {
 			this.requestBody = data;
-			String contentType = httpRequest.headers.get("Content-Type", "");
-			if ("POST".equals(httpRequest.method)) {
+			String contentType = request.headers.get("Content-Type", "");
+			if ("POST".equals(request.method)) {
 				if (contentType.startsWith("application/x-www-form-urlencoded")) {
 					Map<String, List<String>> arguments = null;
 
@@ -272,14 +317,30 @@ public class HttpServer implements EventHandler {
 		}
 
 		public void write(byte[] bytes) {
+			assert (request == null);
+			if (stream.closed)
+				return;
 			StreamHandler handler = new StreamHandler() {
 
 				@Override
 				public void execute(String data) throws Exception {
-					return;
+					onWriteComplete();
 				}
 			};
 			stream.write(bytes, handler);
+		}
+
+		private void onWriteComplete() throws Exception {
+			if (requestFinished)
+				finishRequest();
+		}
+
+		public void finish() throws Exception {
+			assert (request == null);
+			requestFinished = true;
+			if (!stream.writing)
+				finishRequest();
+			
 		}
 
 	}
@@ -292,6 +353,7 @@ public class HttpServer implements EventHandler {
 	 */
 	public static class HttpRequest {
 
+		boolean requestFinished;
 		String method;
 		String uri;
 		String version = "HTTP/1.0";
@@ -348,15 +410,24 @@ public class HttpServer implements EventHandler {
 			// if values: self.arguments[name] = values
 		}
 
+		/**
+		 * Check the version and returns true if its HTTP/1.1
+		 * 
+		 * @return
+		 */
+		public boolean supportsHttp11() {
+			return version.equalsIgnoreCase(version);
+		}
+
 		public void write(byte[] bytes) {
 			connection.write(bytes);
 		}
 
 		public void finish() {
 			try {
-				connection.finishRequest();
+				connection.finish();
+				finishTime = System.currentTimeMillis();
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 

@@ -1,5 +1,6 @@
 package org.jtornadoweb;
 
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -155,21 +156,25 @@ public class IOLoop {
 			Thread.yield();
 
 			Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
-			if (iter.hasNext() || !pool.isTerminated()) // if has selected keys
-														// or poll is still
-														// executing the timeout
-														// is 1
+			// if has selected keys
+			// or poll is still
+			// executing the timeout
+			// is 1
+
+			if (iter.hasNext() || !pool.isTerminated())
 				pollTimeout = 1;
+
 			while (iter.hasNext()) {
 				SelectionKey key = iter.next();
 				iter.remove();
+
 				if (key.isValid() && !key.isAcceptable()) {
 					EventHandlerTask task = new EventHandlerTask(
 							(EventHandler) key.attachment(), key.readyOps(),
 							key.channel());
 					this.removeHandler(key);
 					pendingTasks.add(task);
-					Thread.yield();
+
 				} else if (key.isValid()) {
 					// events other than accept is handled in another thred.
 					((EventHandler) key.attachment()).handleEvents(
@@ -212,8 +217,18 @@ public class IOLoop {
 	public boolean addHandler(AbstractSelectableChannel channel,
 			EventHandler eventHandler, int opts) throws Exception {
 		channel.configureBlocking(false);
-		selector.wakeup();
-		channel.register(selector, opts, eventHandler);
+		if (channel.isRegistered()) {
+			if (channel.keyFor(selector).isValid()) {
+				selector.wakeup();
+				channel.register(selector, opts, eventHandler);
+			}
+
+		} else {
+			channel.register(selector, opts, eventHandler);
+		}
+
+		// silently do nothing. a keep alive connection may be ended.
+
 		return true;
 	}
 }
