@@ -233,10 +233,9 @@ public class HttpServer implements EventHandler {
 			if (noKeepAlive)
 				disconnect = true;
 			else {
-				String connectionHeader = request.headers.get("Connection");
+				String connectionHeader = request.headers.get("Connection", "");
 				if (request.supportsHttp11())
-					disconnect = connectionHeader != null
-							&& connectionHeader.equals("close");
+					disconnect = connectionHeader.equals("close");
 				else if (request.headers.contains("Content-Length")
 						|| request.method.equals("GET")
 						|| request.method.equals("POST"))

@@ -137,6 +137,7 @@ public class IOStream implements EventHandler {
 		while (tempWrite.remaining() > 0) {
 			try {
 				client.write(tempWrite);
+				writing = false;
 			} catch (Exception e) {
 				e.printStackTrace();
 				close();
@@ -168,19 +169,28 @@ public class IOStream implements EventHandler {
 	 * @throws Exception
 	 */
 	private void handleRead() throws Exception {
-		readBuffer.compact();
+
 		readBuffer.mark();
-		while (client.read(readBuffer) > 0) {
+		streamRead.mark();
+		int read;
+		while ((read = client.read(readBuffer)) > 0) {
 
 			CharsetDecoder decoder = charSet.newDecoder();
 
 			ByteBuffer dupReadBuffer = readBuffer.duplicate();
 			dupReadBuffer.reset();
-
+			stream.mark();
 			decoder.decode(dupReadBuffer, stream, true);
 			decoder.flush(stream);
+			stream.reset();
+		}
+		if (read == -1) {
+			System.out.println("conn closed");
+			close();
+			return;
 		}
 
+		streamRead.reset();
 		// If delimiter is still present, callback should be excecuted if the
 		// content is found.
 		if (delimiter != null) {
@@ -209,8 +219,6 @@ public class IOStream implements EventHandler {
 	 * @return "" or the found string.
 	 */
 	private String find(String searchString) {
-
-		// streamRead.clear();
 		String sStream = streamRead.toString();
 		int index = sStream.indexOf(searchString);
 		if (index > -1) {
