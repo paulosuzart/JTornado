@@ -79,6 +79,7 @@ public class IOStream implements EventHandler {
 		streamRead.get(_chars);
 		String data = new String(_chars);
 		callback.execute(data);
+		System.out.println("READBYTES" + streamRead);
 
 	}
 
@@ -167,13 +168,14 @@ public class IOStream implements EventHandler {
 	 * @throws Exception
 	 */
 	private void handleRead() throws Exception {
-
+		readBuffer.compact();
+		readBuffer.mark();
 		while (client.read(readBuffer) > 0) {
 
 			CharsetDecoder decoder = charSet.newDecoder();
 
 			ByteBuffer dupReadBuffer = readBuffer.duplicate();
-			dupReadBuffer.flip();
+			dupReadBuffer.reset();
 
 			decoder.decode(dupReadBuffer, stream, true);
 			decoder.flush(stream);
@@ -216,6 +218,7 @@ public class IOStream implements EventHandler {
 			int forwardPosition = index + searchString.length();
 			streamRead.position(forwardPosition);
 			streamRead.mark();
+			System.out.println("find" + streamRead);
 			return found;
 		}
 		return "";
