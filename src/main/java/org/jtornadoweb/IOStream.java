@@ -3,7 +3,6 @@ package org.jtornadoweb;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -23,16 +22,16 @@ public class IOStream implements EventHandler {
 	private final int maxBufferSize;
 	private final int readChunckSize;
 	private final ByteBuffer readBuffer;
-	private ByteBuffer writeBuffer;
+	private final ByteBuffer writeBuffer;
 	private final CharBuffer stream;
 	private String delimiter;
 	private StreamHandler callback;
 	private IOLoop loop;
 	private final CharBuffer streamRead;
-	private StreamHandler writeHandler;
 	boolean writing;
 	boolean closing;
 	boolean closed;
+	private StreamHandler writeCallback;
 
 	public IOStream(SocketChannel client, IOLoop loop) {
 		this.client = client;
@@ -45,7 +44,7 @@ public class IOStream implements EventHandler {
 		this.readBuffer = ByteBuffer.allocate(readChunckSize);
 		this.stream = CharBuffer.allocate(readChunckSize);
 		this.streamRead = stream.duplicate();
-		this.writeBuffer = null;
+		this.writeBuffer = ByteBuffer.allocateDirect(readChunckSize);
 	}
 
 	/**
@@ -61,7 +60,7 @@ public class IOStream implements EventHandler {
 		String found = find(delimiter);
 		if (found.length() > 0) {
 			try {
-			callback.execute(found);
+				callback.execute(found);
 			} catch (Exception e) {
 				close();
 			}
@@ -95,7 +94,7 @@ public class IOStream implements EventHandler {
 	}
 
 	public void write(String string) {
-
+		System.out.println("Escreverndo");
 		try {
 			writeBuffer.put(string.getBytes()).flip();
 			client.write(writeBuffer);
@@ -106,14 +105,14 @@ public class IOStream implements EventHandler {
 	}
 
 	public void write(byte[] bytes, StreamHandler handler) {
+		System.out.println("ESCREVENDO" + writeBuffer);
+		checkClosed();
 		writing = true;
-		writeHandler = handler;
-		writeBuffer = ByteBuffer.wrap(bytes);
+		writeBuffer.mark();
+		writeBuffer.put(bytes);
 		try {
-			boolean listen = loop.addHandler(client, this,
-					SelectionKey.OP_WRITE);
-			if (!listen)
-				handleWrite();
+			loop.addHandler(client, this, SelectionKey.OP_WRITE);
+			writeCallback = handler;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -130,22 +129,35 @@ public class IOStream implements EventHandler {
 
 	}
 
-	private void handleWrite() {
-		try {
-			while(client.write(writeBuffer) > 0);
-			
-			writeBuffer.clear();
-			this.writing = false;
-			if (this.closing) {
-				this.close();
+	private void handleWrite() throws Exception {
+		ByteBuffer tempWrite = writeBuffer.duplicate();
+		tempWrite.reset();
 
-			} else {
-				writeHandler.execute("");
+		while (tempWrite.remaining() > 0) {
+			try {
+				client.write(tempWrite);
+			} catch (Exception e) {
+				e.printStackTrace();
+				close();
+				return;
 			}
 
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
+		writeBuffer.compact();
+		if (this.closing) {
+			this.close();
+		} else {
+			if (tempWrite.remaining() == 0 && writeCallback != null) {
+				StreamHandler callback = writeCallback;
+				writeCallback = null;
+				try {
+					callback.execute("");
+				} catch (Exception e) {
+					close();
+				}
+			}
+		}
+
 	}
 
 	/**
@@ -196,7 +208,7 @@ public class IOStream implements EventHandler {
 	 */
 	private String find(String searchString) {
 
-		streamRead.clear();
+		// streamRead.clear();
 		String sStream = streamRead.toString();
 		int index = sStream.indexOf(searchString);
 		if (index > -1) {
@@ -211,13 +223,11 @@ public class IOStream implements EventHandler {
 	}
 
 	public void close() throws Exception {
-		if (this.writing) {
-			this.closing = true;
-		} else {
-			this.client.close();
+		this.closing = true;
+		if (!this.writing) {
 			this.closed = true;
+			this.client.close();
 		}
 	}
-
 
 }

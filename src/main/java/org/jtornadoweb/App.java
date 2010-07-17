@@ -1,7 +1,5 @@
 package org.jtornadoweb;
 
-import java.math.BigDecimal;
-
 import org.jtornadoweb.Web.Application;
 import org.jtornadoweb.Web.RequestHandler;
 

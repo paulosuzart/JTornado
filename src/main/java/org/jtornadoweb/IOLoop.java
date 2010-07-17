@@ -1,9 +1,5 @@
 package org.jtornadoweb;
 
-import java.nio.channels.CancelledKeyException;
-import java.nio.channels.Pipe;
-import java.nio.channels.Pipe.SinkChannel;
-import java.nio.channels.Pipe.SourceChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -211,7 +207,7 @@ public class IOLoop {
 	 * @param opts
 	 * @throws Exception
 	 */
-	public boolean addHandler(AbstractSelectableChannel channel,
+	public void addHandler(AbstractSelectableChannel channel,
 			EventHandler eventHandler, int opts) throws Exception {
 		channel.configureBlocking(false);
 		if (channel.isRegistered()) {
@@ -224,8 +220,5 @@ public class IOLoop {
 			channel.register(selector, opts, eventHandler);
 		}
 
-		// silently do nothing. a keep alive connection may be ended.
-
-		return true;
 	}
 }
