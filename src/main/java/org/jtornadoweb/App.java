@@ -15,6 +15,7 @@ public class App {
 		protected void get() {
 			write("worked for 2first time :)\r\n");
 			write("name is: " + getArgument("name", "default", false) + "\r\n");
+			System.out.println("GET");
 		}
 
 		@Override

@@ -43,6 +43,7 @@ public class IOStream implements EventHandler {
 		this.readChunckSize = 8192;
 		this.readBuffer = ByteBuffer.allocate(readChunckSize);
 		this.stream = CharBuffer.allocate(readChunckSize);
+		// TODO remove this additional buffer.
 		this.streamRead = stream.duplicate();
 		this.writeBuffer = ByteBuffer.allocateDirect(readChunckSize);
 	}
@@ -59,7 +60,9 @@ public class IOStream implements EventHandler {
 
 		String found = find(delimiter);
 		if (found.length() > 0) {
+			System.out.println("ENCONTROU - " + found);
 			try {
+
 				callback.execute(found);
 			} catch (Exception e) {
 				close();
@@ -74,12 +77,12 @@ public class IOStream implements EventHandler {
 	}
 
 	public void readBytes(int amount, StreamHandler callback) throws Exception {
+		System.out.println("READBYTES" + streamRead);
 		streamRead.reset();
 		char[] _chars = new char[amount];
 		streamRead.get(_chars);
 		String data = new String(_chars);
 		callback.execute(data);
-		System.out.println("READBYTES" + streamRead);
 
 	}
 
@@ -169,28 +172,31 @@ public class IOStream implements EventHandler {
 	 * @throws Exception
 	 */
 	private void handleRead() throws Exception {
-
 		readBuffer.mark();
 		streamRead.mark();
+		stream.mark();
 		int read;
 		while ((read = client.read(readBuffer)) > 0) {
 
 			CharsetDecoder decoder = charSet.newDecoder();
-
 			ByteBuffer dupReadBuffer = readBuffer.duplicate();
 			dupReadBuffer.reset();
-			stream.mark();
 			decoder.decode(dupReadBuffer, stream, true);
 			decoder.flush(stream);
-			stream.reset();
+			readBuffer.mark();
 		}
+
+		System.out.println("leu  :" + streamRead.toString());
+		System.out.println("read bytes" + read);
 		if (read == -1) {
 			System.out.println("conn closed");
 			close();
 			return;
+		} else {
+			stream.reset();
+			streamRead.reset();
 		}
 
-		streamRead.reset();
 		// If delimiter is still present, callback should be excecuted if the
 		// content is found.
 		if (delimiter != null) {
@@ -219,14 +225,14 @@ public class IOStream implements EventHandler {
 	 * @return "" or the found string.
 	 */
 	private String find(String searchString) {
+
 		String sStream = streamRead.toString();
 		int index = sStream.indexOf(searchString);
 		if (index > -1) {
 			String found = sStream.substring(0, index + searchString.length());
 			int forwardPosition = index + searchString.length();
 			streamRead.position(forwardPosition);
-			streamRead.mark();
-			System.out.println("find" + streamRead);
+			stream.position(forwardPosition);
 			return found;
 		}
 		return "";
