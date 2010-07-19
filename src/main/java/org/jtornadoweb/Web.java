@@ -1,7 +1,9 @@
 package org.jtornadoweb;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Formatter;
 import java.util.HashMap;
 import java.util.List;
@@ -100,13 +102,11 @@ public class Web {
 			headers.put("Server", "JTornadoServer/0.1");
 			headers.put("Content-Type", "text/html; charset=UTF-8");
 			
-			/* TODO implement supportsHttp1_1 on HttpRequest
-			if (request.supportsHttp_1_1) {
+			if (request.supportsHttp11()) {
 				if (request.headers.get("Connection", "").equals("Keep-Alive")) {
 					setHeader("Connection", "Keep-Alive");
 				}
 			}
-			*/
 			
 			writeBuffer = "";
 			statusCode = 200;
@@ -121,9 +121,24 @@ public class Web {
 			assert HttpCode.codes.keySet().contains(statusCode);
 			this.statusCode = statusCode;
 		}
+		
+		protected void setHeader(String name, String value) {
+			//TODO implement UTF-8 conversion
+			this.headers.put(name, value);
+		}
+		
+		protected void setHeader(String name, Number value) {
+			assert (value != null);
+			this.headers.put(name, String.valueOf(value));
+		}
+		
+		protected void setHeader(String name, Date value) {
+			//TODO convert date to string
+			this.headers.put(name, value.toString());
+		}
 
 		/**
-		 * Returns unicode value from the givem argument name. If there is more
+		 * Returns unicode value from the given argument name. If there is more
 		 * than one value to the name, the last one is returner.
 		 * 
 		 * @param name
@@ -137,7 +152,7 @@ public class Web {
 			List<String> values = getArguments(name, trim);
 			if (values == null || values.isEmpty()) {
 				if (defaultValue == null)
-					throw new RuntimeException("404, Missing Argument " + name);
+					throw new HttpError(404, "Missing Argument " + name);
 				return defaultValue;
 			}
 			// last item
@@ -333,10 +348,10 @@ public class Web {
 		private final String[] args;
 		private final static Formatter formatter = new Formatter();
 
-		public HttpError(int statusCode, String... args) {
+		public HttpError(int statusCode) {
 			this.statusCode = statusCode;
 			this.logMessage = null;
-			this.args = args;
+			this.args = null;
 		}
 
 		public HttpError(int statusCode, String logMessage, String... args) {
