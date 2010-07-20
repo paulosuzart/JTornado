@@ -1,6 +1,6 @@
 package org.jtornadoweb;
 
-import java.nio.charset.Charset;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -123,12 +123,18 @@ public class Web {
 		}
 		
 		protected void setHeader(String name, String value) {
-			//TODO implement UTF-8 conversion
+			value = utf8(value);
+			String saveValue = value.replaceAll("[\u0000-\u001F]", " ");
+			if (saveValue.length() > 4000)
+				saveValue = saveValue.substring(0, 4001);
+			if (!value.equals(saveValue))
+				throw new IllegalArgumentException("Unsafe header value "
+						+ value);
+
 			this.headers.put(name, value);
 		}
 		
 		protected void setHeader(String name, Number value) {
-			assert (value != null);
 			this.headers.put(name, String.valueOf(value));
 		}
 		
@@ -375,6 +381,14 @@ public class Web {
 
 		}
 
+	}
+	
+	private static String utf8(String s) {
+		try {
+			return new String(s.getBytes(), "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			throw new IllegalArgumentException(e.getMessage());
+		}
 	}
 
 }
