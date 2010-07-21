@@ -1,6 +1,16 @@
 package org.jtornadoweb;
 
 import java.io.UnsupportedEncodingException;
+import java.net.CookieHandler;
+import java.net.CookieManager;
+import java.net.HttpCookie;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CoderResult;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -8,6 +18,7 @@ import java.util.Formatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.regex.Pattern;
 
 import org.jtornadoweb.HttpServer.HttpRequest;
@@ -138,9 +149,18 @@ public class Web {
 			this.headers.put(name, String.valueOf(value));
 		}
 		
+		/**
+		 * If a date is given, it is formated according to the HTTP
+		 * specification.
+		 * 
+		 * @param name
+		 * @param value
+		 */
 		protected void setHeader(String name, Date value) {
-			//TODO convert date to string
-			this.headers.put(name, value.toString());
+			String format = "EEE, dd MMM yyyy HH:mm:ss z";
+			DateFormat df = new SimpleDateFormat(format);
+			df.setTimeZone(TimeZone.getTimeZone("GMT"));
+			this.headers.put(name, df.format(value));
 		}
 
 		/**
@@ -184,9 +204,13 @@ public class Web {
 			return _validValues;
 
 		}
-
-		private String unicode(String s) {
-			return s; // TODO implement
+		
+		private Object cookies() {
+			
+			List<HttpCookie> list = HttpCookie.parse(request.headers.get("Cookie"));
+			
+			
+			return null;
 		}
 
 		public void execute() {
@@ -385,9 +409,17 @@ public class Web {
 	
 	private static String utf8(String s) {
 		try {
-			return new String(s.getBytes(), "UTF-8");
+			return new String(s.getBytes("UTF-8"));
 		} catch (UnsupportedEncodingException e) {
 			throw new IllegalArgumentException(e.getMessage());
+		}
+	}
+	
+	private static String unicode(String s) {
+		try {
+			return new String(s.getBytes(), "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			throw new HttpError(400, "Non-utf8 argument", e.getMessage());
 		}
 	}
 
