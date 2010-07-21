@@ -36,33 +36,35 @@ public class Web {
 				"POST", "DELETE", "PUT" };
 
 		private Application application;
-		
+
 		private HttpRequest request;
-		
+
 		private boolean headersWritten;
 
 		private boolean finished;
-		
+
 		private boolean autoFinish;
 
-		//TODO change this type
+		// TODO change this type
 		private String writeBuffer;
-		
-		//TODO private Transform transforms; to be implemented
-		//TODO ui
-		//TODO ui["modules"]
-		
-		private int statusCode;
-		
-		private Map<String, String> headers; //_headers in web.py
 
-		public RequestHandler() {}
+		// TODO private Transform transforms; to be implemented
+		// TODO ui
+		// TODO ui["modules"]
+
+		private int statusCode;
+
+		private Map<String, String> headers; // _headers in web.py
+
+		public RequestHandler() {
+		}
+
 		RequestHandler(Application application, HttpRequest request) {
 			this.application = application;
 			this.request = request;
 			this.autoFinish = true;
 			this.headers = new HashMap<String, String>();
-			
+
 			this.clear();
 		}
 
@@ -94,24 +96,24 @@ public class Web {
 		 */
 		protected void prepare() {
 		}
-		
+
 		/**
 		 * Resets all headers and content for this response
 		 */
 		private void clear() {
 			headers.put("Server", "JTornadoServer/0.1");
 			headers.put("Content-Type", "text/html; charset=UTF-8");
-			
+
 			if (request.supportsHttp11()) {
 				if (request.headers.get("Connection", "").equals("Keep-Alive")) {
 					setHeader("Connection", "Keep-Alive");
 				}
 			}
-			
+
 			writeBuffer = "";
 			statusCode = 200;
 		}
-		
+
 		/**
 		 * Set the status of a response.
 		 * 
@@ -121,7 +123,7 @@ public class Web {
 			assert HttpCode.codes.keySet().contains(statusCode);
 			this.statusCode = statusCode;
 		}
-		
+
 		protected void setHeader(String name, String value) {
 			value = utf8(value);
 			String saveValue = value.replaceAll("[\u0000-\u001F]", " ");
@@ -133,13 +135,13 @@ public class Web {
 
 			this.headers.put(name, value);
 		}
-		
+
 		protected void setHeader(String name, Number value) {
 			this.headers.put(name, String.valueOf(value));
 		}
-		
+
 		protected void setHeader(String name, Date value) {
-			//TODO convert date to string
+			// TODO convert date to string
 			this.headers.put(name, value.toString());
 		}
 
@@ -382,7 +384,7 @@ public class Web {
 		}
 
 	}
-	
+
 	private static String utf8(String s) {
 		try {
 			return new String(s.getBytes(), "UTF-8");

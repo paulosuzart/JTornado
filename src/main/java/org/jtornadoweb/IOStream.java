@@ -173,7 +173,7 @@ public class IOStream implements EventHandler {
 	 */
 	private void handleRead() throws Exception {
 		readBuffer.mark();
-		streamRead.mark();
+		//streamRead.mark();
 		stream.mark();
 		int read;
 		while ((read = client.read(readBuffer)) > 0) {
@@ -182,7 +182,8 @@ public class IOStream implements EventHandler {
 			ByteBuffer dupReadBuffer = readBuffer.duplicate();
 			dupReadBuffer.reset();
 			decoder.decode(dupReadBuffer, stream, true);
-			decoder.flush(stream);
+			stream.position(read);
+			//decoder.flush(stream);
 			readBuffer.mark();
 		}
 
@@ -193,8 +194,8 @@ public class IOStream implements EventHandler {
 			close();
 			return;
 		} else {
-			stream.reset();
-			streamRead.reset();
+			//stream.reset();
+			//streamRead.reset();
 		}
 
 		// If delimiter is still present, callback should be excecuted if the
@@ -230,9 +231,9 @@ public class IOStream implements EventHandler {
 		int index = sStream.indexOf(searchString);
 		if (index > -1) {
 			String found = sStream.substring(0, index + searchString.length());
-			int forwardPosition = index + searchString.length();
+			int forwardPosition = index + searchString.length() - 1;
 			streamRead.position(forwardPosition);
-			stream.position(forwardPosition);
+			//stream.position(forwardPosition);
 			return found;
 		}
 		return "";
@@ -243,6 +244,9 @@ public class IOStream implements EventHandler {
 		this.closing = true;
 		if (!this.writing) {
 			this.closed = true;
+			this.stream.clear();
+			this.readBuffer.clear();
+			this.streamRead.clear();
 			this.client.close();
 		}
 	}
