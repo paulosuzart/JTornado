@@ -183,6 +183,8 @@ public class IOStream implements EventHandler {
 			dupReadBuffer.reset();
 			decoder.decode(dupReadBuffer, stream, true);
 			decoder.flush(stream);
+			if (stream.position() != stream.limit())
+				stream.position(stream.position() + read);
 			readBuffer.mark();
 		}
 
@@ -193,7 +195,7 @@ public class IOStream implements EventHandler {
 			close();
 			return;
 		} else {
-			stream.reset();
+			// stream.reset();
 			streamRead.reset();
 		}
 
@@ -226,13 +228,14 @@ public class IOStream implements EventHandler {
 	 */
 	private String find(String searchString) {
 
-		String sStream = streamRead.toString();
+		String sStream = streamRead.subSequence(streamRead.position(),
+				stream.position()).toString();
 		int index = sStream.indexOf(searchString);
 		if (index > -1) {
 			String found = sStream.substring(0, index + searchString.length());
 			int forwardPosition = index + searchString.length();
 			streamRead.position(forwardPosition);
-			stream.position(forwardPosition);
+			// stream.position(forwardPosition);
 			return found;
 		}
 		return "";
