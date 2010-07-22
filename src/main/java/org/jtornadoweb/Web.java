@@ -1,6 +1,7 @@
 package org.jtornadoweb;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Proxy;
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.HttpCookie;
@@ -47,49 +48,44 @@ public class Web {
 				"POST", "DELETE", "PUT" };
 
 		private Application application;
-		
+
 		private HttpRequest request;
-		
+
 		private boolean headersWritten;
 
 		private boolean finished;
-		
+
 		private boolean autoFinish;
 
-		//TODO change this type
+		// TODO change this type
 		private String writeBuffer;
-		
-		//TODO private Transform transforms; to be implemented
-		//TODO ui
-		//TODO ui["modules"]
-		
-		private int statusCode;
-		
-		private Map<String, String> headers; //_headers in web.py
 
-		public RequestHandler() {}
-		public RequestHandler(Application application, HttpRequest request) {
-			this.application = application;
-			this.request = request;
+		// TODO private Transform transforms; to be implemented
+		// TODO ui
+		// TODO ui["modules"]
+
+		private int statusCode;
+
+		private Map<String, String> headers; // _headers in web.py
+
+		public RequestHandler() {
 			this.autoFinish = true;
 			this.headers = new HashMap<String, String>();
-			
-			this.clear();
 		}
 
-		protected void head() {
+		public void head() {
 			throw new HttpError(405);
 		}
 
-		protected void get() {
+		public void get() {
 			throw new HttpError(405);
 		}
 
-		protected void post() {
+		public void post() {
 			throw new HttpError(405);
 		}
 
-		protected void delete() {
+		public void delete() {
 			throw new HttpError(405);
 		}
 
@@ -101,28 +97,30 @@ public class Web {
 		 * Called before the actual handler method.
 		 * 
 		 * Useful to override in a handler if you want a common bottleneck for
-		 * all of your request
+		 * all of your request.
+		 * 
+		 * May be overriden by child class.
 		 */
-		protected void prepare() {
+		public void prepare() {
 		}
-		
+
 		/**
-		 * Resets all headers and content for this response
+		 * Resets all headers and response content.
 		 */
 		private void clear() {
 			headers.put("Server", "JTornadoServer/0.1");
 			headers.put("Content-Type", "text/html; charset=UTF-8");
-			
+
 			if (request.supportsHttp11()) {
 				if (request.headers.get("Connection", "").equals("Keep-Alive")) {
 					setHeader("Connection", "Keep-Alive");
 				}
 			}
-			
+
 			writeBuffer = "";
 			statusCode = 200;
 		}
-		
+
 		/**
 		 * Set the status of a response.
 		 * 
@@ -132,7 +130,7 @@ public class Web {
 			assert HttpCode.codes.keySet().contains(statusCode);
 			this.statusCode = statusCode;
 		}
-		
+
 		protected void setHeader(String name, String value) {
 			value = utf8(value);
 			String saveValue = value.replaceAll("[\u0000-\u001F]", " ");
@@ -144,11 +142,11 @@ public class Web {
 
 			this.headers.put(name, value);
 		}
-		
+
 		protected void setHeader(String name, Number value) {
 			this.headers.put(name, String.valueOf(value));
 		}
-		
+
 		/**
 		 * If a date is given, it is formated according to the HTTP
 		 * specification.
@@ -204,29 +202,34 @@ public class Web {
 			return _validValues;
 
 		}
-		
+
 		private Object cookies() {
-			
-			List<HttpCookie> list = HttpCookie.parse(request.headers.get("Cookie"));
-			
-			
+
+			List<HttpCookie> list = HttpCookie.parse(request.headers
+					.get("Cookie"));
+
 			return null;
 		}
-		
-		public void execute() {			
-			//self._transforms = transforms ???
+
+		/**
+		 * Executes the http request dispatching the execution to the right
+		 * method.
+		 */
+		public void execute() {
+			// self._transforms = transforms ???
 			try {
-				if  (Arrays.binarySearch(SUPPORTED_METHODS, request.method) < 0)
+				if (Arrays.binarySearch(SUPPORTED_METHODS, request.method) < 0)
 					throw new HttpError(405, request.method);
-				
-				if ("POST".equals(request.method)) 
-					//&& application.settings.get("xsrf_cookies")) TODO
+
+				if ("POST".equals(request.method))
+					// && application.settings.get("xsrf_cookies")) TODO
 					checkXsrfCookie();
-				
+
 				prepare();
-				
+
 				if (!finished) {
-					getClass().getMethod(request.method.toLowerCase()).invoke(this);
+					getClass().getMethod(request.method.toLowerCase()).invoke(
+							this);
 					if (autoFinish && !finished)
 						finish();
 				}
@@ -237,13 +240,13 @@ public class Web {
 
 		private void checkXsrfCookie() {
 			// TODO Auto-generated method stub
-			
+
 		}
-		
+
 		private void handleRequestException(Exception e) {
-			// TODO Auto-generated method stub
+			e.printStackTrace();// TODO Auto-generated method stub
 		}
-		
+
 		protected void write(String buffer) {
 			writeBuffer = buffer;
 		}
@@ -298,6 +301,9 @@ public class Web {
 			return this;
 		}
 
+		/**
+		 * Get a new Instance of RequestHandler and invokes the http method.
+		 */
 		@Override
 		public void execute(HttpRequest request) {
 			String path = request.path;
@@ -308,11 +314,12 @@ public class Web {
 					.entrySet()) {
 				if (entry.getKey().matcher(path).matches()) {
 					try {
-						// TODO think something better later!
-						handler = (RequestHandler) entry.getValue().getSuperclass()
-								.getConstructor(Application.class,
-										HttpRequest.class).newInstance(this,
-										request);
+
+						handler = (RequestHandler) entry.getValue()
+								.newInstance();
+						handler.application = this;
+						handler.request = request;
+						handler.clear();
 
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -322,7 +329,7 @@ public class Web {
 			}
 
 			if (handler == null) {
-				// handle not found.
+				// TODO handle not found.
 			}
 			handler.execute();
 		}
@@ -430,7 +437,7 @@ public class Web {
 		}
 
 	}
-	
+
 	private static String utf8(String s) {
 		try {
 			return new String(s.getBytes("UTF-8"));
@@ -438,7 +445,7 @@ public class Web {
 			throw new IllegalArgumentException(e.getMessage());
 		}
 	}
-	
+
 	private static String unicode(String s) {
 		try {
 			return new String(s.getBytes(), "UTF-8");
