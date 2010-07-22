@@ -68,7 +68,7 @@ public class Web {
 		private Map<String, String> headers; //_headers in web.py
 
 		public RequestHandler() {}
-		RequestHandler(Application application, HttpRequest request) {
+		public RequestHandler(Application application, HttpRequest request) {
 			this.application = application;
 			this.request = request;
 			this.autoFinish = true;
@@ -212,17 +212,38 @@ public class Web {
 			
 			return null;
 		}
-
-		public void execute() {
-			if ("get".equals(request.method.toLowerCase())) {
-				get();
-			} else if ("post".equals(request.method.toLowerCase())) {
-				post();
+		
+		public void execute() {			
+			//self._transforms = transforms ???
+			try {
+				if  (Arrays.binarySearch(SUPPORTED_METHODS, request.method) < 0)
+					throw new HttpError(405, request.method);
+				
+				if ("POST".equals(request.method)) 
+					//&& application.settings.get("xsrf_cookies")) TODO
+					checkXsrfCookie();
+				
+				prepare();
+				
+				if (!finished) {
+					getClass().getMethod(request.method.toLowerCase()).invoke(this);
+					if (autoFinish && !finished)
+						finish();
+				}
+			} catch (Exception e) {
+				this.handleRequestException(e);
 			}
-
-			finish();
 		}
 
+		private void checkXsrfCookie() {
+			// TODO Auto-generated method stub
+			
+		}
+		
+		private void handleRequestException(Exception e) {
+			// TODO Auto-generated method stub
+		}
+		
 		protected void write(String buffer) {
 			writeBuffer = buffer;
 		}
@@ -287,9 +308,12 @@ public class Web {
 					.entrySet()) {
 				if (entry.getKey().matcher(path).matches()) {
 					try {
-						// TODO think something better later
-						handler = entry.getValue().newInstance();
-						handler.request = request;
+						// TODO think something better later!
+						handler = (RequestHandler) entry.getValue()
+								.getConstructor(Application.class,
+										HttpRequest.class).newInstance(this,
+										request);
+
 					} catch (Exception e) {
 						e.printStackTrace();
 					}

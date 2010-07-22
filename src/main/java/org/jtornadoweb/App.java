@@ -12,14 +12,14 @@ public class App {
 	public static class MainHandler extends RequestHandler {
 
 		@Override
-		protected void get() {
+		public void get() {
 			write("worked for 2first time :)\r\n");
 			write("name is: " + getArgument("name", "default", false) + "\r\n");
 			System.out.println("GET");
 		}
 
 		@Override
-		protected void post() {
+		public void post() {
 			write("worked for POST too\r\n");
 		}
 
