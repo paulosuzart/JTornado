@@ -309,7 +309,7 @@ public class Web {
 				if (entry.getKey().matcher(path).matches()) {
 					try {
 						// TODO think something better later!
-						handler = (RequestHandler) entry.getValue()
+						handler = (RequestHandler) entry.getValue().getSuperclass()
 								.getConstructor(Application.class,
 										HttpRequest.class).newInstance(this,
 										request);
