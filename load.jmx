@@ -44,7 +44,7 @@
           <stringProp name="HTTPSampler.response_timeout">900</stringProp>
           <stringProp name="HTTPSampler.protocol"></stringProp>
           <stringProp name="HTTPSampler.contentEncoding"></stringProp>
-          <stringProp name="HTTPSampler.path">/?qname=teste</stringProp>
+          <stringProp name="HTTPSampler.path">/?name=teste</stringProp>
           <stringProp name="HTTPSampler.method">GET</stringProp>
           <boolProp name="HTTPSampler.follow_redirects">false</boolProp>
           <boolProp name="HTTPSampler.auto_redirects">true</boolProp>

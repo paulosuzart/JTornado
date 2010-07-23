@@ -60,7 +60,6 @@ public class IOStream implements EventHandler {
 
 		String found = find(delimiter);
 		if (found.length() > 0) {
-			System.out.println("ENCONTROU - " + found);
 			try {
 
 				callback.execute(found);
@@ -77,8 +76,7 @@ public class IOStream implements EventHandler {
 	}
 
 	public void readBytes(int amount, StreamHandler callback) throws Exception {
-		System.out.println("READBYTES" + streamRead);
-		streamRead.reset();
+		// streamRead.reset();
 		char[] _chars = new char[amount];
 		streamRead.get(_chars);
 		String data = new String(_chars);
@@ -98,7 +96,6 @@ public class IOStream implements EventHandler {
 	}
 
 	public void write(String string) {
-		System.out.println("Escreverndo");
 		try {
 			writeBuffer.put(string.getBytes()).flip();
 			client.write(writeBuffer);
@@ -109,7 +106,6 @@ public class IOStream implements EventHandler {
 	}
 
 	public void write(byte[] bytes, StreamHandler handler) {
-		System.out.println("ESCREVENDO" + writeBuffer);
 		checkClosed();
 		writing = true;
 		writeBuffer.mark();
@@ -142,6 +138,7 @@ public class IOStream implements EventHandler {
 				client.write(tempWrite);
 				writing = false;
 			} catch (Exception e) {
+				// How to handle would block?
 				e.printStackTrace();
 				close();
 				return;
@@ -188,14 +185,11 @@ public class IOStream implements EventHandler {
 			readBuffer.mark();
 		}
 
-		System.out.println("leu  :" + streamRead.toString());
-		System.out.println("read bytes" + read);
 		if (read == -1) {
-			System.out.println("conn closed");
 			close();
 			return;
 		} else {
-			// stream.reset();
+
 			streamRead.reset();
 		}
 
@@ -233,9 +227,8 @@ public class IOStream implements EventHandler {
 		int index = sStream.indexOf(searchString);
 		if (index > -1) {
 			String found = sStream.substring(0, index + searchString.length());
-			int forwardPosition = index + searchString.length();
+			int forwardPosition = index + searchString.length() - 1;
 			streamRead.position(forwardPosition);
-			// stream.position(forwardPosition);
 			return found;
 		}
 		return "";
@@ -246,6 +239,9 @@ public class IOStream implements EventHandler {
 		this.closing = true;
 		if (!this.writing) {
 			this.closed = true;
+			this.stream.clear();
+			this.readBuffer.clear();
+			this.streamRead.clear();
 			this.client.close();
 		}
 	}
