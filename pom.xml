@@ -4,7 +4,7 @@
 
 	<groupId>JTornado</groupId>
 	<artifactId>JTornado</artifactId>
-	<version>0.1-SNAPSHOT</version>
+	<version>0.1-alpha-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>JTornado</name>
