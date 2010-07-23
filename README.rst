@@ -16,7 +16,8 @@ Implementation
 ==============
 JTornado uses a single thread to accept connections from clients using the default enviroment Selector to register its interests on the SelectableChannels
 (ServerSocketChannel or SocketChannel).
-Since its not possible to "fork()" the HttpServer like in python, any task - other than accepting connections - is executed in a thread pool (virtually one thread per processor). It means that threads execute Http parse, until a IO operation is need, if so, they simple register the operation interest and become free for processing another event. The same happens to writes. 
+Since its not possible to "fork()" the HttpServer like in python, any task - other than accepting connections - is executed in a thread pool (virtually one thread per processor). It means that threads execute Http parse, until a IO operation is need, if so, they simple register the operation interest and become free for processing another event. The same happens to writes.
+Threads never wait for IO to complete, JTornado was designed to keep your threads busy doing what an HTTP Server should do, serve HTTP request rather than wait for IO.
 
 
 **Changes in the implementation happens all the time in this early stage (Alpha).**
