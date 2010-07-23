@@ -10,12 +10,16 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Formatter;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
 
 import org.jtornadoweb.HttpServer.HttpRequest;
+
+import sun.misc.BASE64Decoder;
+import sun.misc.BASE64Encoder;
 
 /**
  * The JTornado web framework.
@@ -294,12 +298,65 @@ public class Web {
 				this.clearCookie(name);
 		}
 		
-		protected void setSecureCookie() {
-			//TODO
+		/**
+		 * Signs and timestamps a cookie so it cannot be forged.
+		 * 
+		 * You must specify the 'cookie_secret' setting in your Application to
+		 * use this method. It should be a long, random sequence of bytes to be
+		 * used as the HMAC secret for the signature.
+		 * 
+		 * To read a cookie set with this method, use get_secure_cookie().
+		 */
+		protected void setSecureCookie(String name, String value, Integer expiresDays) {
+			String timestamp = String.valueOf(System.currentTimeMillis());
+			value = new BASE64Encoder().encode(value.getBytes());
+			String signature = this.cookieSignature(value, timestamp);
+			value = join("|", value, timestamp, signature);
+			
+			expiresDays = expiresDays == null ? 30 : expiresDays;
+			
+			//TODO think in something to handle **kwargs
+			this.setCookie(name, value, null, null, null, expiresDays);
+		}
+
+		/**
+		 * If the cookie is valid return if otherwise return null.
+		 * 
+		 * @param name
+		 * @return
+		 */
+		protected String getSecureCookie(String name) {
+			String value = this.getCookie(name, null);
+			if (value == null) return null;
+			
+			String[] parts = value.split("\\|");
+			
+			if (parts.length != 3) return null;
+			
+			if (!this.cookieSignature(parts[0], parts[1]).equals(parts[3])) {
+				//TODO replace this sysout for a logging
+				System.out.println("Invalid cookie signature " + value);
+				return null;
+			}
+			
+			long timestamp = Long.parseLong(parts[1]);
+			if (timestamp < System.currentTimeMillis() - 31 * 86400) {
+				//TODO replace this sysout for a logging
+				System.out.println("Expired cookie " + value);
+				return null;
+			}
+			
+			try {
+				byte[] buffer = new BASE64Decoder().decodeBuffer(parts[0]);
+				return new String(buffer);
+			} catch (Exception e) {
+				e.printStackTrace();
+				return null;
+			}
 		}
 		
-		protected String getSecureCookie(String name) {
-			//TODO
+		private String cookieSignature(String value, String timestamp) {
+			// TODO Auto-generated method stub
 			return null;
 		}
 
@@ -553,4 +610,12 @@ public class Web {
 		return df.format(value);
 	}
 
+	public static String join(String delimiter, String... args) {
+		Iterator<String> iter = Arrays.asList(args).iterator();
+	    if (!iter.hasNext()) return "";
+	    StringBuffer buffer = new StringBuffer(iter.next());
+	    while (iter.hasNext()) buffer.append(delimiter).append(iter.next());
+	    return buffer.toString();
+	}
+	
 }
