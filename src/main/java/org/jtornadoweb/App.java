@@ -1,5 +1,6 @@
 package org.jtornadoweb;
 
+import org.jtornadoweb.HttpServer.HttpRequest;
 import org.jtornadoweb.Web.Application;
 import org.jtornadoweb.Web.RequestHandler;
 
@@ -10,7 +11,7 @@ import org.jtornadoweb.Web.RequestHandler;
 public class App {
 
 	public static class MainHandler extends RequestHandler {
-
+		
 		@Override
 		public void get() {
 			write("worked for 2first time :)\r\n");
@@ -26,6 +27,7 @@ public class App {
 	}
 
 	public static void main(String[] args) throws Exception {
+		
 		Application application = new Application().add("/", MainHandler.class);
 
 		HttpServer server = new HttpServer(application, false, null, false);
