@@ -1,7 +1,7 @@
 ===========
 Intro
 ===========
-This project strongly based on `Tornado`_, a HTTP server [1]_ with a simple yet powerfull webframework.
+This project is strongly based on `Tornado`_, a HTTP server with a simple yet powerfull webframework.
 
 By now its an extremaly ugly chunk of code that will get some shape soon replying you what you specify in you RequestHandler methods.
 We do recommend run it on linux 2.6 to take advantage of `epoll`_.
@@ -14,11 +14,10 @@ Implementation
 ==============
 JTornado uses a single thread to accept connections from clients using the default enviroment Selector to register its interests on the SelectableChannels
 (ServerSocketChannel or SocketChannel).
-Since its not possible to "fork()" the HttpServer like in python, any task - other than accepting connections - is executed in a thread pool (virtually one thread per processor). 
+Since its not possible to "fork()" the HttpServer like in python, any task - other than accepting connections - is executed in a thread pool (virtually one thread per processor). It means that threads execute Http parse, until a IO operation is need, if so, they simple register the operation interest and become free for processing another event. The same happens to writes. 
 
-We should move from simple ByteBuffers to Memory Mapped.
 
-**Changes in the implementation happens all the time in this early stage.**
+**Changes in the implementation happens all the time in this early stage (Alpha).**
 
 ==============
 Sample
@@ -33,7 +32,6 @@ A simple groovy script starting a server would be (myServer.groovy)::
  class MainHandler extends RequestHandler {
 
         void get() {
-		write("worked for first time :)\r\n")
 		write("name is: " + getArgument("name", "default", false) + "\r\n")
 	}
 
@@ -60,5 +58,3 @@ Will get (for each curl)::
  name is: paulo
 
 This sample can be found in the test folder. Try it!
-
-.. [1] Currently does not support Keep alive connections. So use true for noKeepAlive in new HttpServer()
