@@ -1,19 +1,12 @@
 package org.jtornadoweb;
 
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Proxy;
-import java.net.CookieHandler;
-import java.net.CookieManager;
 import java.net.HttpCookie;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CoderResult;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Formatter;
 import java.util.HashMap;
@@ -67,6 +60,8 @@ public class Web {
 		private int statusCode;
 
 		private Map<String, String> headers; // _headers in web.py
+		
+		private Map<String, HttpCookie> cookies;
 
 		public RequestHandler() {
 			this.autoFinish = true;
@@ -203,12 +198,85 @@ public class Web {
 
 		}
 
-		private Object cookies() {
+		/**
+		 * Creates a Map of HttpCookie
+		 */
+		private Map<String, HttpCookie> cookies() {
+			if (this.cookies == null) {
+				this.cookies = new HashMap<String, HttpCookie>();
+				String cookie = request.headers.get("Cookie");
+				if (cookie != null && !"".equals(cookie)) {
+					try {
+						List<HttpCookie> _cookies = HttpCookie.parse(cookie);
+						for (HttpCookie c : _cookies) {
+							this.cookies.put(c.getName(), c);
+						}
+					} catch (IllegalArgumentException e) {
+						this.clearAllCookies();
+					}
+				}
+			}
+				
+			return this.cookies;
+		}
+		
+		/**
+		 * Return the cookie value of a given name, else return the default
+		 * value.
+		 * 
+		 * @param name
+		 * @param defaultValue
+		 * @return
+		 */
+		protected String getCookie(String name, String defaultValue) {
+			if (cookies().keySet().contains(name))
+				return cookies().get(name).getValue();
+			return defaultValue;
+		}
+		
+		/**
+		 * Set a cookie with the given options.
+		 * 
+		 * @param name
+		 * @param value
+		 * @param domain
+		 * @param expires
+		 * @param path
+		 * @param expiresDays
+		 */
+		protected void setCookie(String name, String value, String domain,
+				Calendar expires, String path, Integer expiresDays) {
+			name = utf8(name);
+			value = utf8(value);
 
-			List<HttpCookie> list = HttpCookie.parse(request.headers
-					.get("Cookie"));
+			if (name.concat(value).matches(".*[\u0000-\u0020].*"))
+				// Don't let inject any bad stuff
+				throw new IllegalArgumentException(String.format(
+						"Invalid cookie %s : %s", name, value));
+			
+			HttpCookie newCookie = new HttpCookie(name, value);
+			
+			
+			//TODO finish this method
+		}
+		
+		/**
+		 * Deletes the cookie
+		 * 
+		 * @param name Cookie name
+		 */
+		private void clearCookie(String name) {
+			Calendar expires = Calendar.getInstance();
+			expires.add(Calendar.DAY_OF_YEAR, -365);
+			this.setCookie(name, "", null, expires, "/", null);
+		}
 
-			return null;
+		/**
+		 * Removes all the cookies of this request sent by the user
+		 */
+		private void clearAllCookies() {
+			for (String name : this.cookies.keySet())
+				this.clearCookie(name);
 		}
 
 		/**
