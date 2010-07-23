@@ -60,8 +60,10 @@ public class Web {
 		private int statusCode;
 
 		private Map<String, String> headers; // _headers in web.py
-		
+
 		private Map<String, HttpCookie> cookies;
+
+		private Map<String, HttpCookie> newCookies;
 
 		public RequestHandler() {
 			this.autoFinish = true;
@@ -150,10 +152,7 @@ public class Web {
 		 * @param value
 		 */
 		protected void setHeader(String name, Date value) {
-			String format = "EEE, dd MMM yyyy HH:mm:ss z";
-			DateFormat df = new SimpleDateFormat(format);
-			df.setTimeZone(TimeZone.getTimeZone("GMT"));
-			this.headers.put(name, df.format(value));
+			this.headers.put(name, formatDate(value));
 		}
 
 		/**
@@ -201,7 +200,7 @@ public class Web {
 		/**
 		 * Creates a Map of HttpCookie
 		 */
-		private Map<String, HttpCookie> cookies() {
+		protected Map<String, HttpCookie> cookies() {
 			if (this.cookies == null) {
 				this.cookies = new HashMap<String, HttpCookie>();
 				String cookie = request.headers.get("Cookie");
@@ -216,10 +215,10 @@ public class Web {
 					}
 				}
 			}
-				
+
 			return this.cookies;
 		}
-		
+
 		/**
 		 * Return the cookie value of a given name, else return the default
 		 * value.
@@ -233,7 +232,7 @@ public class Web {
 				return cookies().get(name).getValue();
 			return defaultValue;
 		}
-		
+
 		/**
 		 * Set a cookie with the given options.
 		 * 
@@ -253,19 +252,35 @@ public class Web {
 				// Don't let inject any bad stuff
 				throw new IllegalArgumentException(String.format(
 						"Invalid cookie %s : %s", name, value));
-			
+
+			if (this.newCookies == null)
+				this.newCookies = new HashMap<String, HttpCookie>();
+
 			HttpCookie newCookie = new HttpCookie(name, value);
-			
-			
-			//TODO finish this method
+			this.newCookies.put(name, newCookie);
+
+			if (domain != null && !"".equals(domain))
+				newCookie.setDomain(domain);
+
+			if (expiresDays != null && expires == null) {
+				expires = Calendar.getInstance();
+				expires.add(Calendar.DAY_OF_YEAR, expiresDays);
+			}
+
+			if (expires != null)
+				newCookie.setMaxAge(expires.getTimeInMillis() / 1000);
+
+			if (path != null && !"".equals(path))
+				newCookie.setPath(path);
 		}
-		
+
 		/**
 		 * Deletes the cookie
 		 * 
-		 * @param name Cookie name
+		 * @param name
+		 *            Cookie name
 		 */
-		private void clearCookie(String name) {
+		protected void clearCookie(String name) {
 			Calendar expires = Calendar.getInstance();
 			expires.add(Calendar.DAY_OF_YEAR, -365);
 			this.setCookie(name, "", null, expires, "/", null);
@@ -274,9 +289,18 @@ public class Web {
 		/**
 		 * Removes all the cookies of this request sent by the user
 		 */
-		private void clearAllCookies() {
+		protected void clearAllCookies() {
 			for (String name : this.cookies.keySet())
 				this.clearCookie(name);
+		}
+		
+		protected void setSecureCookie() {
+			//TODO
+		}
+		
+		protected String getSecureCookie(String name) {
+			//TODO
+			return null;
 		}
 
 		/**
@@ -520,6 +544,13 @@ public class Web {
 		} catch (UnsupportedEncodingException e) {
 			throw new HttpError(400, "Non-utf8 argument", e.getMessage());
 		}
+	}
+
+	private static String formatDate(Date value) {
+		String format = "EEE, dd MMM yyyy HH:mm:ss z";
+		DateFormat df = new SimpleDateFormat(format);
+		df.setTimeZone(TimeZone.getTimeZone("GMT"));
+		return df.format(value);
 	}
 
 }
