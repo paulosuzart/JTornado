@@ -16,12 +16,12 @@ import java.util.Map;
 public class HttpUtils {
 
 	/**
-	 * Return all parameters
+	 * Return all parameters. "Same" as python cgi.pase_qs
 	 * @param url
 	 * @return
 	 * @throws UnsupportedEncodingException
 	 */
-	public static Map<String, List<String>> getUrlParameters(String url)
+	public static Map<String, List<String>> parseQueryString(String url)
 			throws UnsupportedEncodingException {
 		Map<String, List<String>> params = new HashMap<String, List<String>>();
 		String[] urlParts = url.split("\\?");

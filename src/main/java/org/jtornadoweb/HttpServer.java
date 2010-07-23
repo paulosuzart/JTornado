@@ -8,9 +8,11 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -19,9 +21,8 @@ import java.util.logging.Logger;
 import org.jtornadoweb.IOLoop.EventHandler;
 import org.jtornadoweb.IOStream.StreamHandler;
 import org.jtornadoweb.Web.RequestCallback;
+import org.jtornadoweb.util.CollectionUtils;
 import org.jtornadoweb.util.HttpUtils;
-
-import com.sun.corba.se.pept.transport.Connection;
 
 /**
  * A primary Http Server that simply replies the HTTP content requested.<br>
@@ -206,7 +207,6 @@ public class HttpServer implements EventHandler {
 		private final boolean noKeepAlive;
 		private final boolean xHeaders;
 		private HttpRequest request;
-		private String requestBody;
 		private boolean requestFinished;
 
 		private StreamHandler onHeaders = new StreamHandler() {
@@ -309,11 +309,20 @@ public class HttpServer implements EventHandler {
 		}
 
 		private void onRequestBody(String data) throws Exception {
-			this.requestBody = data;
+			request.body = data;
 			String contentType = request.headers.get("Content-Type", "");
 			if ("POST".equals(request.method)) {
 				if (contentType.startsWith("application/x-www-form-urlencoded")) {
-					Map<String, List<String>> arguments = null;
+					Map<String, List<String>> arguments = HttpUtils
+							.parseQueryString(request.body);
+					for (Entry<String, List<String>> e : arguments.entrySet()) {
+						String name = e.getKey();
+						List<String> values = e.getValue();
+						if (values != null && !values.isEmpty())
+							CollectionUtils.setDefault(request.arguments, name,
+									new ArrayList<String>()).addAll(values);
+
+					}
 
 				}
 			}
@@ -361,7 +370,7 @@ public class HttpServer implements EventHandler {
 		String uri;
 		String version = "HTTP/1.0";
 		HttpHeaders headers;
-		Object body; // TODO which type?
+		String body; // TODO which type?
 		String remoteIp;
 		String protocol;
 		String host;
@@ -400,7 +409,7 @@ public class HttpServer implements EventHandler {
 			String netloc = url.getHost();
 			String sheme = url.getScheme();
 
-			arguments = HttpUtils.getUrlParameters(uri);
+			arguments = HttpUtils.parseQueryString(uri);
 
 			// TODO
 			// scheme, netloc, path, query, fragment = urlparse.urlsplit(uri)
