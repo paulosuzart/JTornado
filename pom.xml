@@ -9,7 +9,27 @@
 
 	<name>JTornado</name>
 	<url>http://maven.apache.org</url>
-
+        
+        <developers>
+	 	<developer>
+			<id>paulosuzart</id>
+			<name>Paulo Suzart</name>
+			<email>paulosuzart@gmail.com</email>
+			<roles>
+				<role>developer</role>
+			</roles>
+			<timezone>-3</timezone>
+		</developer>
+		<developer>
+			<id>rafelfelini</id>
+			<name>Rafael Felini</name>
+			<email>rafael.felini@gmail.com</email>
+			<roles>
+				<role>developer</role>
+			</roles>
+			<timezone>-3</timezone>
+		</developer>
+	</developers>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
