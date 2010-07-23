@@ -1,6 +1,8 @@
 ===========
 Intro
 ===========
+.. image:: http://github.com/paulosuzart/JTornado/raw/master/img/logo.png
+
 This project is strongly based on `Tornado`_, a HTTP server with a simple yet powerfull webframework.
 
 By now its an extremaly ugly chunk of code that will get some shape soon replying you what you specify in you RequestHandler methods.
