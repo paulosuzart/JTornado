@@ -1,7 +1,7 @@
 ===========
 Intro
 ===========
-.. image:: img/logo.png
+.. image:: http://github.com/paulosuzart/JTornado/raw/master/img/logo.png 
 
 This project is strongly based on `Tornado`_, a HTTP server with a simple yet powerfull webframework.
 
