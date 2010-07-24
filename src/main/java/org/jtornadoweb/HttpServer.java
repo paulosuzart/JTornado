@@ -324,8 +324,23 @@ public class HttpServer implements EventHandler {
 
 					}
 
+				} else if (contentType.startsWith("multipart/form-data")) {
+					if (contentType.contains("boundary=")) {
+						String boundary = contentType.split("boundary=", 1)[1];
+						if (boundary != null)
+							parseMimeBody(boundary, data);
+
+					} else {
+						//TODO warn 
+					}
 				}
 			}
+			requestCallback.execute(request);
+		}
+
+		private void parseMimeBody(String boundary, String data) {
+			// TODO Auto-generated method stub
+
 		}
 
 		public void write(byte[] bytes) {

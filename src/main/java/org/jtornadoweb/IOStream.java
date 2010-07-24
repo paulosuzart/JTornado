@@ -227,7 +227,7 @@ public class IOStream implements EventHandler {
 		int index = sStream.indexOf(searchString);
 		if (index > -1) {
 			String found = sStream.substring(0, index + searchString.length());
-			int forwardPosition = index + searchString.length() - 1;
+			int forwardPosition = index + searchString.length();
 			streamRead.position(forwardPosition);
 			return found;
 		}
