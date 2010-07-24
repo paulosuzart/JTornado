@@ -3,12 +3,8 @@ package org.jtornadoweb;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
 import java.security.InvalidKeyException;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.text.DateFormat;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -388,21 +384,6 @@ public class Web {
 			return hexdigest;
 		}
 		
-		
-		public static void main(String[] args) throws InvalidKeyException, NoSuchAlgorithmException {
-			SecretKey key = new SecretKeySpec("9090rafa".getBytes(), "HmacSHA1");
-			Mac m = Mac.getInstance("HmacSHA1");
-			m.init(key);
-			m.update("bamobora1232".getBytes());
-			byte[] mac = m.doFinal();
-			
-			for (byte b : mac) {
-				String hex = Integer.toHexString( 0xFF & b);
-				hex = hex.length() == 1 ? "" + hex : hex;
-				System.out.print(hex);
-			}
-		}
-
 		/**
 		 * Executes the http request dispatching the execution to the right
 		 * method.
