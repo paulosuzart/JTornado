@@ -3,9 +3,7 @@ package org.jtornadoweb;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
 import java.security.InvalidKeyException;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -364,32 +362,28 @@ public class Web {
 		}
 		
 		private String cookieSignature(String... parts) {
-			// TODO Auto-generated method stub
-//			this.requireSetting("cookie_secret", "secure cookies");
-//			
-//			SecretKey key = new SecretKeySpec(application.settings["cookie_secret"].getBytes(), "HmacSHA1");
-//			Mac m = Mac.getInstance("HmacSHA1");
-//			m.init(key);
-//			m.update(inputData);
-//			byte[] mac = m.doFinal();
-			
-			return null;
-		}
-		
-		
-		public static void main(String[] args) throws InvalidKeyException, NoSuchAlgorithmException {
-			SecretKey key = new SecretKeySpec("19011985".getBytes(), "HmacSHA1");
-			Mac m = Mac.getInstance("HmacSHA1");
-			m.init(key);
-			m.update("rafaelfelini".getBytes());
-			byte[] mac = m.doFinal();
-			
-			for (byte b : mac) {
-				System.out.print(Integer.toHexString(b));
+			String hexdigest = "";
+			try {
+				SecretKey key = new SecretKeySpec(application.settings.get("cookie_secret").getBytes(), "HmacSHA1");
+				Mac m = Mac.getInstance("HmacSHA1");
+				m.init(key);
+				for (String part : parts) m.update(part.getBytes());
+				byte[] mac = m.doFinal();
+				
+				for (byte b : mac) {
+					String hex = Integer.toHexString(0xFF & b);
+					hexdigest += hex.length() == 1 ? "" + hex : hex;
+				}
+			} catch (InvalidKeyException e) {
+				// TODO What to do?
+				e.printStackTrace();
+			} catch (NoSuchAlgorithmException e) {
+				// TODO What to do?
+				e.printStackTrace();
 			}
-			
+			return hexdigest;
 		}
-
+		
 		/**
 		 * Executes the http request dispatching the execution to the right
 		 * method.
@@ -461,6 +455,7 @@ public class Web {
 	 */
 	public static class Application implements RequestCallback {
 
+		public Map<String, String> settings;
 		private Map<Pattern, Class<? extends RequestHandler>> handlers;
 
 		public Application() {
