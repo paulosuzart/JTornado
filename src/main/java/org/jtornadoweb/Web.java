@@ -7,6 +7,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.text.DateFormat;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -364,30 +366,41 @@ public class Web {
 		}
 		
 		private String cookieSignature(String... parts) {
-			// TODO Auto-generated method stub
-//			this.requireSetting("cookie_secret", "secure cookies");
-//			
-//			SecretKey key = new SecretKeySpec(application.settings["cookie_secret"].getBytes(), "HmacSHA1");
-//			Mac m = Mac.getInstance("HmacSHA1");
-//			m.init(key);
-//			m.update(inputData);
-//			byte[] mac = m.doFinal();
-			
-			return null;
+			String hexdigest = "";
+			try {
+				SecretKey key = new SecretKeySpec(application.settings.get("cookie_secret").getBytes(), "HmacSHA1");
+				Mac m = Mac.getInstance("HmacSHA1");
+				m.init(key);
+				for (String part : parts) m.update(part.getBytes());
+				byte[] mac = m.doFinal();
+				
+				for (byte b : mac) {
+					String hex = Integer.toHexString(0xFF & b);
+					hexdigest += hex.length() == 1 ? "" + hex : hex;
+				}
+			} catch (InvalidKeyException e) {
+				// TODO What to do?
+				e.printStackTrace();
+			} catch (NoSuchAlgorithmException e) {
+				// TODO What to do?
+				e.printStackTrace();
+			}
+			return hexdigest;
 		}
 		
 		
 		public static void main(String[] args) throws InvalidKeyException, NoSuchAlgorithmException {
-			SecretKey key = new SecretKeySpec("19011985".getBytes(), "HmacSHA1");
+			SecretKey key = new SecretKeySpec("9090rafa".getBytes(), "HmacSHA1");
 			Mac m = Mac.getInstance("HmacSHA1");
 			m.init(key);
-			m.update("rafaelfelini".getBytes());
+			m.update("bamobora1232".getBytes());
 			byte[] mac = m.doFinal();
 			
 			for (byte b : mac) {
-				System.out.print(Integer.toHexString(b));
+				String hex = Integer.toHexString( 0xFF & b);
+				hex = hex.length() == 1 ? "" + hex : hex;
+				System.out.print(hex);
 			}
-			
 		}
 
 		/**
@@ -461,6 +474,7 @@ public class Web {
 	 */
 	public static class Application implements RequestCallback {
 
+		public Map<String, String> settings;
 		private Map<Pattern, Class<? extends RequestHandler>> handlers;
 
 		public Application() {
