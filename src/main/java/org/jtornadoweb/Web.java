@@ -2,6 +2,10 @@ package org.jtornadoweb;
 
 import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
+import java.security.InvalidKeyException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -15,6 +19,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
+
+import javax.crypto.Mac;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.jtornadoweb.HttpServer.HttpRequest;
 
@@ -355,9 +363,31 @@ public class Web {
 			}
 		}
 		
-		private String cookieSignature(String value, String timestamp) {
+		private String cookieSignature(String... parts) {
 			// TODO Auto-generated method stub
+//			this.requireSetting("cookie_secret", "secure cookies");
+//			
+//			SecretKey key = new SecretKeySpec(application.settings["cookie_secret"].getBytes(), "HmacSHA1");
+//			Mac m = Mac.getInstance("HmacSHA1");
+//			m.init(key);
+//			m.update(inputData);
+//			byte[] mac = m.doFinal();
+			
 			return null;
+		}
+		
+		
+		public static void main(String[] args) throws InvalidKeyException, NoSuchAlgorithmException {
+			SecretKey key = new SecretKeySpec("19011985".getBytes(), "HmacSHA1");
+			Mac m = Mac.getInstance("HmacSHA1");
+			m.init(key);
+			m.update("rafaelfelini".getBytes());
+			byte[] mac = m.doFinal();
+			
+			for (byte b : mac) {
+				System.out.print(Integer.toHexString(b));
+			}
+			
 		}
 
 		/**
