@@ -5,7 +5,6 @@ Intro
 
 This project is strongly based on `Tornado`_, an HTTP server with a simple yet powerfull webframework.
 
-By now its an extremaly ugly chunk of code that will get some shape soon replying you what you specify in you RequestHandler methods.
 We do recommend run it on linux 2.6 to take advantage of `epoll`_.
 
 .. _`epoll`: http://linux.die.net/man/4/epoll
@@ -14,10 +13,10 @@ We do recommend run it on linux 2.6 to take advantage of `epoll`_.
 ==============
 Implementation
 ==============
-JTornado uses a single thread to accept connections from clients using the default enviroment Selector to register its interests on the SelectableChannels
+JTornado uses a single thread to accept connections from clients, and uses the default enviroment Selector to register its interests on the SelectableChannels
 (ServerSocketChannel or SocketChannel).
-Since its not possible to "fork()" the HttpServer like in python, any task - other than accepting connections - is executed in a thread pool (virtually one thread per processor). It means that threads execute Http parse, until a IO operation is need, if so, they simple register the operation interest and become free for processing another event. The same happens to writes.
-Threads never wait for IO to complete, JTornado was designed to keep your threads busy doing what an HTTP Server should do, serve HTTP request rather than wait for IO.
+Since its not possible to "fork()" the HttpServer like in python, any task - other than accepting connections - is executed in a thread pool (virtually one thread per processor). It means that threads execute Http parse until an IO operation is need. If so, the thread simply register the operation interest and become free for processing another event. The same happens to writes.
+Threads never wait for IO to complete, JTornado was designed to keep the threads busy doing what an HTTP Server should do, serve HTTP request rather than waiting for IO.
 
 
 **Changes in the implementation happens all the time in this early stage (Alpha).**
