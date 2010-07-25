@@ -3,7 +3,7 @@ Intro
 ===========
 .. image:: http://github.com/paulosuzart/JTornado/raw/master/img/logo.png 
 
-This project is strongly based on `Tornado`_, an HTTP server with a simple yet powerfull webframework.
+This project is strongly based on `Tornado`_, a non-blocking HTTP server with a simple yet powerfull webframework.
 
 We do recommend run it on linux 2.6 to take advantage of `epoll`_.
 
