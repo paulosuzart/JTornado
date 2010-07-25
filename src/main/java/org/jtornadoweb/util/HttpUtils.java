@@ -28,7 +28,7 @@ public class HttpUtils {
 		Map<String, List<String>> params = new HashMap<String, List<String>>();
 
 		// Removes any ? or / of the url and splits it on & character.
-		String[] query = url.replaceAll("[\\?/]", "").split("[&");
+		String[] query = url.replaceAll("[\\?/]", "").split("&");
 		// If there is nothing after / or ?, just returns an empty map of
 		// parameters.
 		if ("".equals(query[0]))
