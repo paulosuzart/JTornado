@@ -2,8 +2,7 @@ package org.jtornadoweb;
 
 import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import java.security.GeneralSecurityException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -16,6 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import javax.crypto.Mac;
@@ -23,9 +23,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.jtornadoweb.HttpServer.HttpRequest;
-
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
+import org.jtornadoweb.util.Base64Coder;
 
 /**
  * The JTornado web framework.
@@ -42,6 +40,8 @@ public class Web {
 	 * @author rafael.felini
 	 */
 	public static class RequestHandler {
+
+		private final Logger logger = Logger.getLogger(Web.class.toString());
 
 		/**
 		 * Override the class variable SUPPORTED_METHODS to support more or less
@@ -118,11 +118,9 @@ public class Web {
 			headers.put("Server", "JTornadoServer/0.1");
 			headers.put("Content-Type", "text/html; charset=UTF-8");
 
-			if (request.supportsHttp11()) {
-				if (request.headers.get("Connection", "").equals("Keep-Alive")) {
+			if (!request.supportsHttp11())
+				if (request.headers.get("Connection", "").equals("Keep-Alive"))
 					setHeader("Connection", "Keep-Alive");
-				}
-			}
 
 			writeBuffer = "";
 			statusCode = 200;
@@ -133,7 +131,7 @@ public class Web {
 		 * 
 		 * @param statusCode
 		 */
-		protected final void setStatus(int statusCode) {
+		protected void setStatus(int statusCode) {
 			assert HttpCode.codes.keySet().contains(statusCode);
 			this.statusCode = statusCode;
 		}
@@ -303,7 +301,7 @@ public class Web {
 			for (String name : this.cookies.keySet())
 				this.clearCookie(name);
 		}
-		
+
 		/**
 		 * Signs and timestamps a cookie so it cannot be forged.
 		 * 
@@ -313,16 +311,18 @@ public class Web {
 		 * 
 		 * To read a cookie set with this method, use get_secure_cookie().
 		 */
-		protected void setSecureCookie(String name, String value, Integer expiresDays) {
+		protected void setSecureCookie(String name, String value,
+				String domain, Calendar expires, String path,
+				Integer expiresDays) {
+
 			String timestamp = String.valueOf(System.currentTimeMillis());
-			value = new BASE64Encoder().encode(value.getBytes());
+			value = Base64Coder.encodeString(value);
 			String signature = this.cookieSignature(value, timestamp);
 			value = join("|", value, timestamp, signature);
-			
+
 			expiresDays = expiresDays == null ? 30 : expiresDays;
-			
-			//TODO think in something to handle **kwargs
-			this.setCookie(name, value, null, null, null, expiresDays);
+
+			this.setCookie(name, value, domain, expires, path, expiresDays);
 		}
 
 		/**
@@ -333,57 +333,72 @@ public class Web {
 		 */
 		protected String getSecureCookie(String name) {
 			String value = this.getCookie(name, null);
-			if (value == null) return null;
-			
+			if (value == null)
+				return null;
+
 			String[] parts = value.split("\\|");
-			
-			if (parts.length != 3) return null;
-			
+
+			if (parts.length != 3)
+				return null;
+
 			if (!this.cookieSignature(parts[0], parts[1]).equals(parts[3])) {
-				//TODO replace this sysout for a logging
-				System.out.println("Invalid cookie signature " + value);
+				logger.warning("Invalid cookie signature " + value);
 				return null;
 			}
-			
+
 			long timestamp = Long.parseLong(parts[1]);
 			if (timestamp < System.currentTimeMillis() - 31 * 86400) {
-				//TODO replace this sysout for a logging
-				System.out.println("Expired cookie " + value);
+				logger.warning("Expired cookie " + value);
 				return null;
 			}
-			
+
 			try {
-				byte[] buffer = new BASE64Decoder().decodeBuffer(parts[0]);
+				byte[] buffer = Base64Coder.decodeLines(parts[0]);
 				return new String(buffer);
 			} catch (Exception e) {
 				e.printStackTrace();
 				return null;
 			}
 		}
-		
+
 		private String cookieSignature(String... parts) {
+			this.requireSetting("cookie_secret", "secure cookies");
 			String hexdigest = "";
 			try {
-				SecretKey key = new SecretKeySpec(application.settings.get("cookie_secret").getBytes(), "HmacSHA1");
+				SecretKey key = new SecretKeySpec(application.settings.get(
+						"cookie_secret").getBytes(), "HmacSHA1");
 				Mac m = Mac.getInstance("HmacSHA1");
 				m.init(key);
-				for (String part : parts) m.update(part.getBytes());
+				for (String part : parts)
+					m.update(part.getBytes());
 				byte[] mac = m.doFinal();
-				
+
 				for (byte b : mac) {
+					// TODO Maybe doesn't need this verifications, only
+					// toHexString can resolve
 					String hex = Integer.toHexString(0xFF & b);
-					hexdigest += hex.length() == 1 ? "" + hex : hex;
+					hexdigest += hex.length() == 1 ? "0" + hex : hex;
 				}
-			} catch (InvalidKeyException e) {
-				// TODO What to do?
-				e.printStackTrace();
-			} catch (NoSuchAlgorithmException e) {
-				// TODO What to do?
-				e.printStackTrace();
+			} catch (GeneralSecurityException e) {
+				throw new RuntimeException(e);
 			}
 			return hexdigest;
 		}
-		
+
+		/**
+		 * Throws an exception if a given setting is not defined.
+		 * 
+		 * @param name
+		 * @param feature
+		 */
+		private void requireSetting(String name, String feature) {
+			if (application.settings.get(name) == null) {
+				String msg = "You must define the '%s' setting in your application to use %s";
+				throw new IllegalArgumentException(String.format(msg, name,
+						feature));
+			}
+		}
+
 		/**
 		 * Executes the http request dispatching the execution to the right
 		 * method.
@@ -637,11 +652,12 @@ public class Web {
 
 	public static String join(String delimiter, String... args) {
 		Iterator<String> iter = Arrays.asList(args).iterator();
-	    if (!iter.hasNext()) return "";
-	    StringBuffer buffer = new StringBuffer(iter.next());
-	    while (iter.hasNext()) buffer.append(delimiter).append(iter.next());
-	    return buffer.toString();
+		if (!iter.hasNext())
+			return "";
+		StringBuffer buffer = new StringBuffer(iter.next());
+		while (iter.hasNext())
+			buffer.append(delimiter).append(iter.next());
+		return buffer.toString();
 	}
-	
-}
 
+}
