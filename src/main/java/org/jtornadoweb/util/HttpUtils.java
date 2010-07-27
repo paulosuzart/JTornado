@@ -36,6 +36,9 @@ public class HttpUtils {
 
 		for (String param : query) {
 			String pair[] = param.split("=");
+			// name=xpto&age. age will be ignored.
+			if (pair.length != 2)
+				continue;
 			String key = URLDecoder.decode(pair[0], "UTF-8");
 			String value = URLDecoder.decode(pair[1], "UTF-8");
 			List<String> values = params.get(key);
@@ -47,5 +50,9 @@ public class HttpUtils {
 		}
 
 		return params;
+	}
+
+	public static void main(String[] args) throws UnsupportedEncodingException {
+		parseQueryString("name=pedro&name=paulo");
 	}
 }
