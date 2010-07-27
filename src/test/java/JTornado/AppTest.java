@@ -1,10 +1,9 @@
 package JTornado;
 
+import static org.jtornadoweb.util.StringUtils.substring;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-
-import org.jtornadoweb.HttpServer;
 
 /**
  * Unit test for simple App.
@@ -30,9 +29,13 @@ public class AppTest extends TestCase {
 	/**
 	 * Rigourous Test :-)
 	 */
-	public void testApp() {
-
-		assert true;
-
+	public void testStringUtils_substring() {
+		String test = "paulo";
+		assertEquals("substring[:2]", "pa", substring(test, ":2"));
+		assertEquals("substring[:-2]", "pau", substring(test, ":-2"));
+		assertEquals("substring[:3]", "pau", substring(test, ":3"));
+		assertEquals("substring[2:]", "ulo", substring(test, "2:"));
+		assertEquals("substring[0]", "p", substring(test, "0"));
+		assertEquals("substring[2:3]", "u", substring(test, "2:3"));
 	}
 }

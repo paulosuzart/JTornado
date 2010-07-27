@@ -331,16 +331,26 @@ public class HttpServer implements EventHandler {
 							parseMimeBody(boundary, data);
 
 					} else {
-						//TODO warn 
+						// TODO warn
 					}
 				}
 			}
 			requestCallback.execute(request);
 		}
 
-		private void parseMimeBody(String boundary, String data) {
-			// TODO Auto-generated method stub
+		private void parseMimeBody(final String boundary, String data) {
+			String _boundary = "";
+			int footerLen = 0;
+			if (boundary.startsWith("\"") && boundary.endsWith("\""))
+				_boundary = boundary.substring(1, boundary.length() - 2);
 
+			footerLen = data.endsWith("\r\n") ? _boundary.length() + 6
+					: _boundary.length() + 4;
+
+			String[] parts = data.substring(0, data.length() - footerLen)
+					.split("--" + _boundary + "\r\n");
+			
+			
 		}
 
 		public void write(byte[] bytes) {
