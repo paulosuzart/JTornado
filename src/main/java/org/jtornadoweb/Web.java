@@ -432,17 +432,85 @@ public class Web {
 		}
 
 		private void handleRequestException(Exception e) {
-			e.printStackTrace();// TODO Auto-generated method stub
+			if (e instanceof HttpError) {
+				//TODO finish this method
+			} else {
+				logger.severe(String.format("Uncaught exception %s \n %s",
+						requestSumary(), request));
+				sendError(500);
+			}
+		}
+
+		private String requestSumary() {
+			return this.request.method + " " + this.request.uri + " ("
+					+ this.request.remoteIp + ")";
 		}
 
 		protected void write(String buffer) {
 			writeBuffer = buffer;
 		}
 
+		/**
+		 * Finishes this response, ending the HTTP request.
+		 * 
+		 * @param chunk
+		 */
+		private void finish(String chunk) {
+			
+			assert !this.finished;
+			if (chunk != null)
+				this.write(chunk);
+			
+			if (!this.headersWritten) {
+				if (this.statusCode == 200 && "GET".equals(this.request.method)) {
+					
+				}
+			}
+			
+			flush();
+			request.finish();
+			finished = true;
+		}
+		
+		/**
+		 * Finishes this response, ending the HTTP request.
+		 */
 		private void finish() {
 			flush();
 			request.finish();
 			finished = true;
+		}
+
+		/**
+		 * Sends the HTTP error to the browser.
+		 * 
+		 * @param statusCode
+		 */
+		protected void sendError(Integer statusCode) {
+			if (this.headersWritten) {
+				String msg = "Cannot send error response after headers written";
+				logger.severe(msg);
+				if (!this.finished) {
+					this.finish();
+				}
+				return;
+			}
+			this.clear();
+			this.setStatus(statusCode);
+			String message = this.getErrorHtml(statusCode);
+			this.finish(message);
+		}
+
+		/**
+		 * Override this method to implement custom error pages.
+		 * 
+		 * @param statusCode
+		 * @return
+		 */
+		protected String getErrorHtml(Integer statusCode) {
+			String page = "<html><title>%1$d: %2$s</title>"
+					+ "<body>%1$d: %2$s</body></html>";
+			return String.format(page, statusCode, HttpCode.get(statusCode));
 		}
 
 		private void flush() {
