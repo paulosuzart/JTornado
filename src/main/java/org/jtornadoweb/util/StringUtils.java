@@ -8,6 +8,8 @@ package org.jtornadoweb.util;
  */
 public class StringUtils {
 
+	public static final String COLON = ":";
+
 	/**
 	 * Same as s[:3], s[3:], s[-1], etc.
 	 * 
