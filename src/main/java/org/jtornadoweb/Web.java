@@ -539,7 +539,7 @@ public class Web {
 	public static class Application implements RequestCallback {
 
 		public Map<String, String> settings;
-		private Map<Pattern, Class<? extends RequestHandler>> handlers;
+		protected Map<Pattern, Class<? extends RequestHandler>> handlers;
 
 		public Application() {
 			this.handlers = new HashMap<Pattern, Class<? extends RequestHandler>>();
