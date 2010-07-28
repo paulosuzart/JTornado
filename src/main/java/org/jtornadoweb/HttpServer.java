@@ -164,8 +164,11 @@ public class HttpServer implements EventHandler {
 			for (String line : header.split("\r\n")) {
 				if (line.equals("") || line.equals("\r"))
 					continue;
-				String[] h = line.split(": ");
-				newHeaders.put(h[0], h[1]);
+				
+				String[] h = line.split(":");
+				if (h.length == 1)
+					continue;
+				newHeaders.put(h[0], h[1].trim());
 			}
 			return newHeaders;
 		}
@@ -329,18 +332,18 @@ public class HttpServer implements EventHandler {
 
 				} else if (contentType.startsWith("multipart/form-data")) {
 					if (contentType.contains("boundary=")) {
-						String boundary = contentType.split("boundary=", 1)[1];
+						String boundary = contentType.split("boundary=", 1)[0];
 						if (boundary != null)
 							parseMimeBody(boundary, data);
-
 					} else {
-						// TODO warn
+						logger.warning("Invalid multipart/form-data");
 					}
 				}
 			}
 			requestCallback.execute(request);
 		}
 
+		@SuppressWarnings({ "unchecked", "serial" })
 		private void parseMimeBody(final String boundary, String data) {
 			String _boundary = "";
 			int footerLen = 0;
@@ -368,8 +371,9 @@ public class HttpServer implements EventHandler {
 					logger.warning("Invalid multipart/form-data");
 					continue;
 				}
-				String value = StringUtils.substring(part, eoh + 4 + ":-2");
-				Map<String, String> nameValues = new HashMap<String, String>();
+				final String value = StringUtils.substring(part, eoh + 4
+						+ ":-2");
+				final Map<String, String> nameValues = new HashMap<String, String>();
 				for (String namePart : StringUtils.substring(nameHeader, "10:")
 						.split(";")) {
 					final String[] _split = namePart.trim().split("=", 1);
@@ -393,8 +397,20 @@ public class HttpServer implements EventHandler {
 
 				String name = nameValues.get("name");
 				if (nameValues.containsKey("file")) {
-					String contentType = headers.get("Content-Type", "application/unknown");
-					//request.files.
+					final String contentType = headers.get("Content-Type",
+							"application/unknown");
+					CollectionUtils.setDefault(request.files, name,
+							new HashMap<String, Map<String, String>>()).putAll(
+							new HashMap<String, String>() {
+								{
+									put("filename", nameValues.get("filename"));
+									put("body", nameValues.get(value));
+									put("contet_type", contentType);
+								}
+							});
+				} else {
+					CollectionUtils.setDefault(request.arguments, name,
+							new ArrayList<String>()).add(value);
 				}
 
 			}
@@ -447,7 +463,7 @@ public class HttpServer implements EventHandler {
 		String remoteIp;
 		String protocol;
 		String host;
-		Object files; // TODO which type?
+		Map<String, Map> files; // TODO which type?
 		HttpConnection connection;
 		long startTime;
 		long finishTime;
@@ -484,10 +500,6 @@ public class HttpServer implements EventHandler {
 
 			arguments = HttpUtils.parseQueryString(uri);
 
-			// TODO
-			// scheme, netloc, path, query, fragment = urlparse.urlsplit(uri)
-			// self.path = path
-			// self.query = query
 			// arguments = cgi.parse_qs(query)
 			// self.arguments = {}
 			// for name, values in arguments.iteritems():

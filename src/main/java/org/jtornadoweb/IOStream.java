@@ -77,9 +77,11 @@ public class IOStream implements EventHandler {
 
 	public void readBytes(int amount, StreamHandler callback) throws Exception {
 		// streamRead.reset();
-		char[] _chars = new char[amount];
-		streamRead.get(_chars);
-		String data = new String(_chars);
+		byte[] _bytes = new byte[amount];
+		ByteBuffer dupReadBuffer = readBuffer.duplicate();
+		dupReadBuffer.position(streamRead.position());
+		dupReadBuffer.get(_bytes);
+		String data = new String(_bytes);
 		callback.execute(data);
 
 	}
@@ -174,7 +176,6 @@ public class IOStream implements EventHandler {
 		stream.mark();
 		int read;
 		while ((read = client.read(readBuffer)) > 0) {
-
 			CharsetDecoder decoder = charSet.newDecoder();
 			ByteBuffer dupReadBuffer = readBuffer.duplicate();
 			dupReadBuffer.reset();
@@ -189,7 +190,6 @@ public class IOStream implements EventHandler {
 			close();
 			return;
 		} else {
-
 			streamRead.reset();
 		}
 
