@@ -21,6 +21,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.logging.Logger;
 
 import org.jtornadoweb.IOLoop.EventHandler;
+import org.jtornadoweb.IOLoop.EventHandlerAddapter;
 import org.jtornadoweb.IOStream.StreamHandler;
 import org.jtornadoweb.Web.RequestCallback;
 import org.jtornadoweb.util.CollectionUtils;
@@ -49,7 +50,7 @@ import org.jtornadoweb.util.StringUtils;
  * @author paulosuzart@gmail.com
  * 
  */
-public class HttpServer implements EventHandler {
+public class HttpServer extends EventHandlerAddapter {
 	private final Logger logger = Logger
 			.getLogger("org.jtornadoweb.HttpServer");
 
@@ -115,34 +116,18 @@ public class HttpServer implements EventHandler {
 		return this.loop;
 	}
 
-	/**
-	 * Handles the events from selector. Actually accepts the connection and
-	 * After instantiate an HttpConnection - in a pooled Thread - tries to
-	 * accept (non-Blocking) an eventually new connection. Otherwise returns.
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.jtornadoweb.IOLoop.EventHandlerAddapter#onAccept(java.nio.channels
+	 * .SelectableChannel)
 	 */
 	@Override
-	public void handleEvents(int opts, SelectableChannel channel)
-			throws Exception {
-
-		while (true) {
-			try {
-				SocketChannel clientChannel = ((ServerSocketChannel) channel)
-						.accept();
-				if (clientChannel == null) {
-					return;
-				}
-
-				IOStream stream = new IOStream(clientChannel, this.getLoop());
-				new HttpConnection(stream, clientChannel.socket()
-						.getInetAddress(), requestCallback, noKeepAlive,
-						xHeaders);
-
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-
-		}
-
+	protected void onAccept(SelectableChannel channel) throws Exception {
+		IOStream stream = new IOStream((SocketChannel) channel, this.getLoop());
+		new HttpConnection(stream, ((SocketChannel) channel).socket()
+				.getInetAddress(), requestCallback, noKeepAlive, xHeaders);
 	}
 
 	/**
@@ -164,7 +149,7 @@ public class HttpServer implements EventHandler {
 			for (String line : header.split("\r\n")) {
 				if (line.equals("") || line.equals("\r"))
 					continue;
-				
+
 				String[] h = line.split(":");
 				if (h.length == 1)
 					continue;

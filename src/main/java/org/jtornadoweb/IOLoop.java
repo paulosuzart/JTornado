@@ -1,8 +1,11 @@
 package org.jtornadoweb;
 
+import java.io.IOException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -12,6 +15,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import org.jtornadoweb.HttpServer.HttpConnection;
 
 /**
  * 
@@ -108,10 +113,94 @@ public class IOLoop {
 
 	}
 
-	/**
-	 * Tracks all handlers added to selector.
-	 */
-	private Map<EventHandler, Object[]> handlers;
+	public static abstract class EventHandlerAddapter implements EventHandler {
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see org.jtornadoweb.IOLoop.EventHandler#handleEvents(int,
+		 * java.nio.channels.SelectableChannel)
+		 */
+		@Override
+		public void handleEvents(int opts, SelectableChannel channel)
+				throws Exception {
+			switch (opts) {
+			case SelectionKey.OP_READ:
+				try {
+					onRead(channel);
+				} catch (Exception e) {
+					onReadError(e, channel);
+				}
+				break;
+			case SelectionKey.OP_WRITE:
+				try {
+					onWrite(channel);
+				} catch (Exception e) {
+					onWriteError(e, channel);
+				}
+			case SelectionKey.OP_ACCEPT:
+				try {
+					_onAccept(channel);
+				} catch (Exception e) {
+					onAcceptError(e, channel);
+				}
+			default:
+				break;
+			}
+
+		}
+
+		private void _onAccept(SelectableChannel channel) throws Exception {
+			while (true) {
+				SocketChannel clientChannel = ((ServerSocketChannel) channel)
+						.accept();
+				if (clientChannel == null)
+					break;
+
+				onAccept(clientChannel);
+
+			}
+
+		}
+
+		protected void onAcceptError(Exception e, SelectableChannel channel) {
+			onWriteError(e, channel);
+		}
+
+		protected void onAccept(SelectableChannel channel) throws Exception {
+			throw new UnsupportedOperationException();
+		}
+
+		/**
+		 * Default behavior is close the channel - if open - and print the
+		 * stack.
+		 * 
+		 * @param e
+		 * @param channel
+		 */
+		protected void onWriteError(Exception e, SelectableChannel channel) {
+			try {
+				if (channel.isOpen())
+					channel.close();
+				e.printStackTrace();
+			} catch (Exception _e) {
+				_e.printStackTrace();
+			}
+		}
+
+		protected void onReadError(Exception e, SelectableChannel channel) {
+			onWriteError(e, channel);
+		}
+
+		protected void onWrite(SelectableChannel channel) throws Exception {
+			throw new UnsupportedOperationException();
+		}
+
+		protected void onRead(SelectableChannel channel) throws Exception {
+			throw new UnsupportedOperationException();
+		}
+
+	}
 
 	/**
 	 * Default system selector. <b>EPoll is highly recommended.</b>
@@ -126,7 +215,6 @@ public class IOLoop {
 	public IOLoop(ExecutorService pool) throws Exception {
 		this.pool = pool;
 		this.selector = Selector.open();
-		this.handlers = new HashMap<EventHandler, Object[]>();
 
 		if (this.pool instanceof ThreadPoolExecutor) {
 			ThreadPoolExecutor tpool = ((ThreadPoolExecutor) this.pool);
@@ -166,10 +254,11 @@ public class IOLoop {
 							(EventHandler) key.attachment(), key.readyOps(),
 							key.channel());
 					this.removeHandler(key);
+					// Adds the task for the next iteration.
 					pendingTasks.add(task);
 
 				} else if (key.isValid()) {
-					// events other than accept is handled in another thred.
+					/* Events other than accept is handled in another thread. */
 					((EventHandler) key.attachment()).handleEvents(
 							key.readyOps(), key.channel());
 				}
