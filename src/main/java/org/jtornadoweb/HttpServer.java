@@ -1,9 +1,11 @@
 package org.jtornadoweb;
 
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
@@ -23,6 +25,7 @@ import org.jtornadoweb.IOStream.StreamHandler;
 import org.jtornadoweb.Web.RequestCallback;
 import org.jtornadoweb.util.CollectionUtils;
 import org.jtornadoweb.util.HttpUtils;
+import org.jtornadoweb.util.StringUtils;
 
 /**
  * A primary Http Server that simply replies the HTTP content requested.<br>
@@ -349,8 +352,53 @@ public class HttpServer implements EventHandler {
 
 			String[] parts = data.substring(0, data.length() - footerLen)
 					.split("--" + _boundary + "\r\n");
-			
-			
+			for (String part : parts) {
+				if ("".equals(part))
+					continue;
+				int eoh = part.indexOf("\r\n\r\n");
+				if (eoh == -1) {
+					logger.warning("multipart/form-data missing headers");
+					continue;
+				}
+				HttpHeaders headers = HttpHeaders.parse(StringUtils.substring(
+						part, ":" + eoh));
+				String nameHeader = headers.get("Content-Disposition", "");
+				if (!nameHeader.startsWith("form-data;")
+						|| !part.endsWith("\r\n")) {
+					logger.warning("Invalid multipart/form-data");
+					continue;
+				}
+				String value = StringUtils.substring(part, eoh + 4 + ":-2");
+				Map<String, String> nameValues = new HashMap<String, String>();
+				for (String namePart : StringUtils.substring(nameHeader, "10:")
+						.split(";")) {
+					final String[] _split = namePart.trim().split("=", 1);
+					String name = _split[0];
+					String nameValue = _split[1];
+					try {
+						nameValues.put(name, URLDecoder.decode(
+								nameValue.replace("\"", ""), "utf-8"));
+
+					} catch (UnsupportedEncodingException e) {
+						logger.finest(e.getMessage());
+						continue;
+					}
+
+				}
+
+				if (!nameValues.containsKey("name")) {
+					logger.warning("multipart/form-data value missing name");
+					continue;
+				}
+
+				String name = nameValues.get("name");
+				if (nameValues.containsKey("file")) {
+					String contentType = headers.get("Content-Type", "application/unknown");
+					//request.files.
+				}
+
+			}
+
 		}
 
 		public void write(byte[] bytes) {
