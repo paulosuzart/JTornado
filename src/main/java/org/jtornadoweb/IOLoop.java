@@ -1,22 +1,17 @@
 package org.jtornadoweb;
 
-import java.io.IOException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import org.jtornadoweb.HttpServer.HttpConnection;
 
 /**
  * 
@@ -113,7 +108,7 @@ public class IOLoop {
 
 	}
 
-	public static abstract class EventHandlerAddapter implements EventHandler {
+	public static abstract class EventHandlerAdapter implements EventHandler {
 
 		/*
 		 * (non-Javadoc)
@@ -145,7 +140,7 @@ public class IOLoop {
 					onAcceptError(e, channel);
 				}
 			default:
-				break;
+				throw new UnsupportedOperationException();
 			}
 
 		}

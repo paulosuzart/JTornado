@@ -20,8 +20,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.logging.Logger;
 
-import org.jtornadoweb.IOLoop.EventHandler;
-import org.jtornadoweb.IOLoop.EventHandlerAddapter;
+import org.jtornadoweb.IOLoop.EventHandlerAdapter;
 import org.jtornadoweb.IOStream.StreamHandler;
 import org.jtornadoweb.Web.RequestCallback;
 import org.jtornadoweb.util.CollectionUtils;
@@ -50,7 +49,7 @@ import org.jtornadoweb.util.StringUtils;
  * @author paulosuzart@gmail.com
  * 
  */
-public class HttpServer extends EventHandlerAddapter {
+public class HttpServer extends EventHandlerAdapter {
 	private final Logger logger = Logger
 			.getLogger("org.jtornadoweb.HttpServer");
 
@@ -62,6 +61,7 @@ public class HttpServer extends EventHandlerAddapter {
 
 	private final IOLoop loop;
 
+	@SuppressWarnings("unused")
 	private static class TFactory implements ThreadFactory {
 		private int count;
 
