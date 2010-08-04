@@ -133,12 +133,14 @@ public class IOLoop {
 				} catch (Exception e) {
 					onWriteError(e, channel);
 				}
+				break;
 			case SelectionKey.OP_ACCEPT:
 				try {
 					_onAccept(channel);
 				} catch (Exception e) {
 					onAcceptError(e, channel);
 				}
+				break;
 			default:
 				throw new UnsupportedOperationException();
 			}

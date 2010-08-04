@@ -309,6 +309,7 @@ public class HttpServer extends EventHandlerAdapter {
 					for (Entry<String, List<String>> e : arguments.entrySet()) {
 						String name = e.getKey();
 						List<String> values = e.getValue();
+						// TODO line above must check if each the value is not empty
 						if (values != null && !values.isEmpty())
 							CollectionUtils.setDefault(request.arguments, name,
 									new ArrayList<String>()).addAll(values);
@@ -328,18 +329,23 @@ public class HttpServer extends EventHandlerAdapter {
 			requestCallback.execute(request);
 		}
 
+		/**
+		 * TODO Mutability sux! make this code immutable.
+		 * 
+		 * @param boundary
+		 * @param data
+		 */
 		@SuppressWarnings({ "unchecked", "serial" })
-		private void parseMimeBody(final String boundary, String data) {
-			String _boundary = "";
+		private void parseMimeBody(String boundary, String data) {
 			int footerLen = 0;
 			if (boundary.startsWith("\"") && boundary.endsWith("\""))
-				_boundary = boundary.substring(1, boundary.length() - 2);
+				boundary = StringUtils.substring(boundary, "1:-1");
 
-			footerLen = data.endsWith("\r\n") ? _boundary.length() + 6
-					: _boundary.length() + 4;
+			footerLen = data.endsWith("\r\n") ? boundary.length() + 6
+					: boundary.length() + 4;
 
-			String[] parts = data.substring(0, data.length() - footerLen)
-					.split("--" + _boundary + "\r\n");
+			String[] parts = StringUtils.substring(data, ":-" + footerLen)
+					.split("--" + boundary + "\r\n");
 			for (String part : parts) {
 				if ("".equals(part))
 					continue;
