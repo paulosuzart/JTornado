@@ -78,6 +78,9 @@ File upload handler::
 	  write(sb.toString());
       }
   }
+  //...
+  Application application = new Application().add("/upload", FileHandler.class);
+  
   
 Try::
 
