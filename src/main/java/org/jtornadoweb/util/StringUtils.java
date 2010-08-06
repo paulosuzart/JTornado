@@ -1,17 +1,18 @@
 package org.jtornadoweb.util;
 
 import static java.lang.Integer.valueOf;
+import static java.lang.String.valueOf;
 
 /**
  * Methods for string with python semantics.
  * 
- * @author paulo
+ * @author paulosuzart
  * 
  */
 public class StringUtils {
 
 	/**
-	 * Same as s[:3], s[3:], s[-1], etc. <b>WANR</b> This method does not
+	 * Same as s[:3], s[3:], s[-1], etc. <b>WARN</b> This method does not
 	 * validate if the indexes at i parameter are really numbers.
 	 * 
 	 * @param target
@@ -22,7 +23,7 @@ public class StringUtils {
 		final String[] is = i.split(":", 2);
 		final int len = target.length();
 		if (!i.contains(":"))
-			return String.valueOf(target.charAt(norm(len, valueOf(is[0]))));
+			return valueOf(target.charAt(norm(len, valueOf(is[0]))));
 		else if (i.startsWith(":"))
 			return target.substring(0, norm(len, valueOf(is[1])));
 		else if (i.endsWith(":"))
@@ -34,7 +35,7 @@ public class StringUtils {
 
 	/**
 	 * Return a new index 'normalized', that is, for negative index, points to
-	 * the corresponding index at the end .
+	 * the corresponding index at the end.
 	 * 
 	 * @param len
 	 * @param i
