@@ -32,6 +32,7 @@ public class IOStream implements EventHandler {
 	boolean closing;
 	boolean closed;
 	private StreamHandler writeCallback;
+	private int amount;
 
 	public IOStream(SocketChannel client, IOLoop loop) {
 		this.client = client;
@@ -82,8 +83,15 @@ public class IOStream implements EventHandler {
 		dupReadBuffer.position(streamRead.position());
 		dupReadBuffer.get(_bytes);
 		String data = new String(_bytes);
-		callback.execute(data);
+		if (data.trim().length() == 0) {
+			assert this.callback == null;
+			this.amount = amount;
+			this.callback = callback;
+			loop.addHandler(client, this, SelectionKey.OP_READ);
+		}
 
+		else
+			callback.execute(data);
 	}
 
 	private void checkClosed() {
@@ -97,14 +105,8 @@ public class IOStream implements EventHandler {
 		return maxBufferSize;
 	}
 
-	public void write(String string) {
-		try {
-			writeBuffer.put(string.getBytes()).flip();
-			client.write(writeBuffer);
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	public void write(String data) {
+		write(data.getBytes(), null);
 	}
 
 	public void write(byte[] bytes, StreamHandler handler) {
@@ -147,7 +149,7 @@ public class IOStream implements EventHandler {
 			}
 
 		}
-		writeBuffer.compact();
+		writeBuffer.clear();
 		if (this.closing) {
 			this.close();
 		} else {
@@ -155,7 +157,8 @@ public class IOStream implements EventHandler {
 				StreamHandler callback = writeCallback;
 				writeCallback = null;
 				try {
-					callback.execute("");
+					if (callback != null)
+						callback.execute("");
 				} catch (Exception e) {
 					close();
 				}
@@ -171,11 +174,17 @@ public class IOStream implements EventHandler {
 	 * @throws Exception
 	 */
 	private void handleRead() throws Exception {
+
+		// if client still send data, they can be gathered.
+		// TODO too much risky because the next read will occur while the HTTP
+		// is being processed.
+
 		readBuffer.mark();
 		streamRead.mark();
 		stream.mark();
 		int read;
 		while ((read = client.read(readBuffer)) > 0) {
+			System.out.println("---" + read);
 			CharsetDecoder decoder = charSet.newDecoder();
 			ByteBuffer dupReadBuffer = readBuffer.duplicate();
 			dupReadBuffer.reset();
@@ -185,15 +194,15 @@ public class IOStream implements EventHandler {
 				stream.position(stream.position() + read);
 			readBuffer.mark();
 		}
-
 		if (read == -1) {
 			close();
 			return;
-		} else {
-			streamRead.reset();
 		}
 
-		// If delimiter is still present, callback should be excecuted if the
+		streamRead.reset();
+
+		// If delimiter is still present, callback should be excecuted if
+		// the
 		// content is found.
 		if (delimiter != null) {
 
@@ -208,6 +217,12 @@ public class IOStream implements EventHandler {
 				loop.addHandler(client, this, SelectionKey.OP_READ);
 			}
 
+		} else if (amount > 0) {
+			StreamHandler cback = callback;
+			callback = null;
+			int _amount = amount;
+			amount = 0;
+			readBytes(_amount, cback);
 		}
 
 	}

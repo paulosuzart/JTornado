@@ -34,6 +34,7 @@ public class UtilsTest extends TestCase {
 		assertEquals("substring[2:]", "ulo", substring(test, "2:"));
 		assertEquals("substring[0]", "p", substring(test, "0"));
 		assertEquals("substring[2:3]", "u", substring(test, "2:3"));
+		assertEquals("substring[1:-2]", "au", substring(test, "1:-2"));
 	}
 
 	/**

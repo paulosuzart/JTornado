@@ -1,6 +1,5 @@
 package org.jtornadoweb;
 
-import org.jtornadoweb.HttpServer.HttpRequest;
 import org.jtornadoweb.Web.Application;
 import org.jtornadoweb.Web.RequestHandler;
 
@@ -10,13 +9,16 @@ import org.jtornadoweb.Web.RequestHandler;
  */
 public class App {
 
+	/**
+	 * Sample Handler
+	 * 
+	 * 
+	 */
 	public static class MainHandler extends RequestHandler {
-		
+
 		@Override
 		public void get() {
-			write("worked for 2first time :)\r\n");
 			write("name is: " + getArgument("name", "default", false) + "\r\n");
-			System.out.println("GET");
 		}
 
 		@Override
@@ -26,9 +28,28 @@ public class App {
 
 	}
 
+	/**
+	 * Request Handler assuming field with file being uploaded (POST) with field
+	 * name == filename;
+	 * 
+	 * 
+	 */
+	public static class FileHandler extends RequestHandler {
+		@Override
+		public void post() {
+			StringBuilder sb = new StringBuilder();
+			sb.append("Filename is \r\n");
+			sb.append(request.files.get("filename").get("filename"));
+			sb.append("\r\n");
+			sb.append(request.files.get("filename").get("body"));
+			write(sb.toString());
+		}
+	}
+
 	public static void main(String[] args) throws Exception {
-		
-		Application application = new Application().add("/", MainHandler.class);
+
+		Application application = new Application().add("/", MainHandler.class)
+				.add("/upload", FileHandler.class);
 
 		HttpServer server = new HttpServer(application, false, null, false);
 		server.listen(8089);

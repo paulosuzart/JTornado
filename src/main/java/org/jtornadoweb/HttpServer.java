@@ -289,6 +289,7 @@ public class HttpServer extends EventHandlerAdapter {
 						}
 					};
 					stream.readBytes(contentLength, onBody);
+					return;
 				}
 
 				requestCallback.execute(request);
@@ -318,7 +319,7 @@ public class HttpServer extends EventHandlerAdapter {
 
 				} else if (contentType.startsWith("multipart/form-data")) {
 					if (contentType.contains("boundary=")) {
-						String boundary = contentType.split("boundary=", 1)[0];
+						String boundary = contentType.split("boundary=", 2)[1];
 						if (boundary != null)
 							parseMimeBody(boundary, data);
 					} else {
@@ -367,7 +368,7 @@ public class HttpServer extends EventHandlerAdapter {
 				final Map<String, String> nameValues = new HashMap<String, String>();
 				for (String namePart : StringUtils.substring(nameHeader, "10:")
 						.split(";")) {
-					final String[] _split = namePart.trim().split("=", 1);
+					final String[] _split = namePart.trim().split("=", 2);
 					String name = _split[0];
 					String nameValue = _split[1];
 					try {
@@ -387,7 +388,7 @@ public class HttpServer extends EventHandlerAdapter {
 				}
 
 				String name = nameValues.get("name");
-				if (nameValues.containsKey("file")) {
+				if (nameValues.containsKey("filename")) {
 					final String contentType = headers.get("Content-Type",
 							"application/unknown");
 					CollectionUtils.setDefault(request.files, name,
@@ -395,7 +396,7 @@ public class HttpServer extends EventHandlerAdapter {
 							new HashMap<String, String>() {
 								{
 									put("filename", nameValues.get("filename"));
-									put("body", nameValues.get(value));
+									put("body", value);
 									put("contet_type", contentType);
 								}
 							});
@@ -469,6 +470,7 @@ public class HttpServer extends EventHandlerAdapter {
 			this.uri = uri;
 			this.version = version;
 			this.headers = headers;
+			this.files = new HashMap<String, Map>(); 
 
 			if (connection.xHeaders) {
 				// this.remoteIp = headers.get("X-Real-Ip", remoteIp);

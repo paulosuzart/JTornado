@@ -52,7 +52,7 @@ public class Web {
 
 		private Application application;
 
-		private HttpRequest request;
+		protected HttpRequest request;
 
 		private boolean headersWritten;
 
