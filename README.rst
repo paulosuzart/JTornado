@@ -22,9 +22,9 @@ In JTornado, threads never wait for IO complete, it is designed to keep its thre
 
 **Changes in the implementation happens all the time in this early stage (Alpha).**
 
-==============
-Sample
-==============
+===============
+Sample (Groovy)
+===============
 
 A simple groovy script starting a server would be (myServer.groovy)::
 
@@ -61,3 +61,26 @@ Will get (for each curl)::
  name is: paulo
 
 This sample can be found in the test folder. Try it!
+
+==========================================
+Simple (Java) FileHandler for file upload
+==========================================
+File upload handler::
+
+  public static class FileHandler extends RequestHandler {
+      @Override
+      public void post() {
+	  StringBuilder sb = new StringBuilder();
+	  sb.append("Filename is \r\n");
+	  sb.append(request.files.get("filename").get("filename"));
+	  sb.append("\r\n");
+	  sb.append(request.files.get("filename").get("body"));
+	  write(sb.toString());
+      }
+  }
+  
+Try::
+  curl -v -F filename=@./pom.xml http://localhost:8089/upload
+
+And you'll get the file name and the file content in response.
+
