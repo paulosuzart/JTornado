@@ -1,6 +1,5 @@
 package org.jtornadoweb;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.SelectableChannel;
@@ -62,7 +61,6 @@ public class IOStream implements EventHandler {
 		String found = find(delimiter);
 		if (found.length() > 0) {
 			try {
-
 				callback.execute(found);
 			} catch (Exception e) {
 				close();
@@ -76,22 +74,30 @@ public class IOStream implements EventHandler {
 
 	}
 
+	/**
+	 * Reads the specified <b>amount</b> of bytes. If it's not possible to read
+	 * the total amount, IOStream registers the interest in OP_READ again.
+	 * 
+	 * @param amount
+	 * @param callback
+	 * @throws Exception
+	 */
 	public void readBytes(int amount, StreamHandler callback) throws Exception {
-		// streamRead.reset();
 		byte[] _bytes = new byte[amount];
 		ByteBuffer dupReadBuffer = readBuffer.duplicate();
 		dupReadBuffer.position(streamRead.position());
 		dupReadBuffer.get(_bytes);
 		String data = new String(_bytes);
 		if (data.trim().length() == 0) {
+			// TODO it's not safe to say that all requested date were read.
 			assert this.callback == null;
 			this.amount = amount;
 			this.callback = callback;
 			loop.addHandler(client, this, SelectionKey.OP_READ);
-		}
-
-		else
+		} else {
+			readBuffer.position(dupReadBuffer.position());
 			callback.execute(data);
+		}
 	}
 
 	private void checkClosed() {
@@ -142,7 +148,7 @@ public class IOStream implements EventHandler {
 				client.write(tempWrite);
 				writing = false;
 			} catch (Exception e) {
-				// How to handle would block?
+				// TODO How to handle would block?
 				e.printStackTrace();
 				close();
 				return;
@@ -175,16 +181,11 @@ public class IOStream implements EventHandler {
 	 */
 	private void handleRead() throws Exception {
 
-		// if client still send data, they can be gathered.
-		// TODO too much risky because the next read will occur while the HTTP
-		// is being processed.
-
 		readBuffer.mark();
 		streamRead.mark();
 		stream.mark();
 		int read;
 		while ((read = client.read(readBuffer)) > 0) {
-			System.out.println("---" + read);
 			CharsetDecoder decoder = charSet.newDecoder();
 			ByteBuffer dupReadBuffer = readBuffer.duplicate();
 			dupReadBuffer.reset();
@@ -218,6 +219,7 @@ public class IOStream implements EventHandler {
 			}
 
 		} else if (amount > 0) {
+			// if the amount is present, should invoke the readBytes.
 			StreamHandler cback = callback;
 			callback = null;
 			int _amount = amount;
