@@ -1,56 +1,47 @@
 package org.jtornadoweb.util;
 
+import static java.lang.Integer.valueOf;
+
 /**
- * Methods with python semantics.
+ * Methods for string with python semantics.
  * 
  * @author paulo
  * 
  */
 public class StringUtils {
 
-	public static final String COLON = ":";
-
 	/**
-	 * Same as s[:3], s[3:], s[-1], etc.
+	 * Same as s[:3], s[3:], s[-1], etc. <b>WANR</b> This method does not
+	 * validate if the indexes at i parameter are really numbers.
 	 * 
 	 * @param target
 	 * @param i
 	 * @return
 	 */
-	public static String substring(final String target, String i) {
-		String[] is = i.split(":");
+	public static String substring(final String target, final String i) {
+		final String[] is = i.split(":", 2);
+		final int len = target.length();
+		if (!i.contains(":"))
+			return String.valueOf(target.charAt(norm(len, valueOf(is[0]))));
+		else if (i.startsWith(":"))
+			return target.substring(0, norm(len, valueOf(is[1])));
+		else if (i.endsWith(":"))
+			return target.substring(norm(len, valueOf(is[0])));
+		else
+			return target.substring(norm(len, valueOf(is[0])),
+					norm(len, valueOf(is[1])));
+	}
 
-		/* Supposed to be a number TODO validate i */
-		if (is.length == 1 && !i.contains(":"))
-			return String.valueOf(target.charAt(Integer.valueOf(is[0])));
-		else if ("".equals(is[0])) {
-			int index = Integer.valueOf(is[1]);
-			if (index > 0)
-				return target.substring(0, index);
-			else if (index < 0)
-				return target.substring(0, (target.length()) + index);
-			else if (index == 0)
-				return target.substring(0, 0);
-
-		} else if (':' == (i.charAt(i.length() - 1))) {
-			// Why :2 returns [,2] and 2: returns [2]. #java #fear
-			int index = Integer.valueOf(is[0]);
-			if (index > 0)
-				return target.substring(index);
-			else if (index < 0)
-				return target.substring(target.length() + index, target.length());
-			else if (index == 0)
-				return target.substring(0);
-		} else {
-			int sIndex = Integer.valueOf(is[0]);
-			int eIndex = Integer.valueOf(is[1]);
-			if (sIndex < 0)
-				sIndex = target.length() - 1 + sIndex;
-			if (eIndex < 0)
-				eIndex = target.length() + eIndex;
-			return target.substring(sIndex, eIndex);
-		}
-		return null;
+	/**
+	 * Return a new index 'normalized', that is, for negative index, points to
+	 * the corresponding index at the end .
+	 * 
+	 * @param len
+	 * @param i
+	 * @return
+	 */
+	private static int norm(final int len, final int i) {
+		return i < 0 ? len + i : i;
 	}
 
 }
