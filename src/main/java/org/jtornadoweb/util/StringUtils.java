@@ -13,7 +13,7 @@ public class StringUtils {
 
 	/**
 	 * Same as s[:3], s[3:], s[-1], etc. <b>WARN</b> This method does not
-	 * validate if the indexes at i parameter are really numbers.
+	 * validate if the indexes at <pre>i</pre> parameter are really numbers.
 	 * 
 	 * @param target
 	 * @param i
