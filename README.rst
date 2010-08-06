@@ -80,6 +80,7 @@ File upload handler::
   }
   
 Try::
+
   curl -v -F filename=@./pom.xml http://localhost:8089/upload
 
 And you'll get the file name and the file content in response.
