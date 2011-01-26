@@ -246,7 +246,7 @@ public class HttpServer extends EventHandlerAdapter {
 		}
 
 		/**
-		 * Extracts the reader and reply to the client. <br>
+		 * Extracts the header and reply to the client. <br>
 		 * TODO complete the implementation
 		 */
 		public void onHeaders(String data) {// HTTPConnection._on_headers

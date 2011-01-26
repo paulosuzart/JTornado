@@ -539,10 +539,10 @@ public class Web {
 	public static class Application implements RequestCallback {
 
 		public Map<String, String> settings;
-		protected Map<Pattern, Class<? extends RequestHandler>> handlers;
+		protected Map<Pattern, RequestHandler> handlers;
 
 		public Application() {
-			this.handlers = new HashMap<Pattern, Class<? extends RequestHandler>>();
+			this.handlers = new HashMap<Pattern, RequestHandler>();
 		}
 
 		/**
@@ -552,8 +552,7 @@ public class Web {
 		 * @param handler
 		 * @return
 		 */
-		public Application add(String uri,
-				Class<? extends RequestHandler> handler) {
+		public<T extends RequestHandler> Application add(String uri,T handler) {
 			this.handlers.put(Pattern.compile(uri), handler);
 			return this;
 		}
@@ -567,13 +566,13 @@ public class Web {
 
 			RequestHandler handler = null;
 
-			for (Map.Entry<Pattern, Class<? extends RequestHandler>> entry : handlers
+			for (Map.Entry<Pattern, RequestHandler> entry : handlers
 					.entrySet()) {
 				if (entry.getKey().matcher(path).matches()) {
 					try {
 
-						handler = (RequestHandler) entry.getValue()
-								.newInstance();
+						handler = (RequestHandler) entry.getValue();
+//								.newInstance();
 						handler.application = this;
 						handler.request = request;
 						handler.clear();

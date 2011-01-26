@@ -48,8 +48,8 @@ public class App {
 
 	public static void main(String[] args) throws Exception {
 
-		Application application = new Application().add("/", MainHandler.class)
-				.add("/upload", FileHandler.class);
+		Application application = new Application().add("/", new MainHandler())
+				.add("/upload", new FileHandler());
 
 		HttpServer server = new HttpServer(application, false, null, false);
 		server.listen(8089);
