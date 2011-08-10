@@ -365,8 +365,10 @@ public class Web {
 			this.requireSetting("cookie_secret", "secure cookies");
 			String hexdigest = "";
 			try {
-				SecretKey key = new SecretKeySpec(application.settings.get(
-						"cookie_secret").getBytes(), "HmacSHA1");
+				SecretKey key = new SecretKeySpec(
+						((String) application.settings.get("cookie_secret"))
+								.getBytes(),
+						"HmacSHA1");
 				Mac m = Mac.getInstance("HmacSHA1");
 				m.init(key);
 				for (String part : parts)
@@ -433,7 +435,7 @@ public class Web {
 
 		private void handleRequestException(Exception e) {
 			if (e instanceof HttpError) {
-				//TODO finish this method
+				// TODO finish this method
 			} else {
 				logger.severe(String.format("Uncaught exception %s \n %s",
 						requestSumary(), request));
@@ -456,22 +458,22 @@ public class Web {
 		 * @param chunk
 		 */
 		private void finish(String chunk) {
-			
+
 			assert !this.finished;
 			if (chunk != null)
 				this.write(chunk);
-			
+
 			if (!this.headersWritten) {
 				if (this.statusCode == 200 && "GET".equals(this.request.method)) {
-					
+
 				}
 			}
-			
+
 			flush();
 			request.finish();
 			finished = true;
 		}
-		
+
 		/**
 		 * Finishes this response, ending the HTTP request.
 		 */
@@ -536,13 +538,14 @@ public class Web {
 	 * 
 	 * @author rafaelfelini
 	 */
-	public static class Application implements RequestCallback {
+	public static class Application<T extends RequestHandler> implements
+			RequestCallback {
 
 		public Map<String, String> settings;
-		protected Map<Pattern, RequestHandler> handlers;
+		protected Map<Pattern, Class<T>> handlers;
 
 		public Application() {
-			this.handlers = new HashMap<Pattern, RequestHandler>();
+			this.handlers = new HashMap<Pattern, Class<T>>();
 		}
 
 		/**
@@ -552,7 +555,7 @@ public class Web {
 		 * @param handler
 		 * @return
 		 */
-		public<T extends RequestHandler> Application add(String uri,T handler) {
+		public Application add(String uri, Class<T> handler) {
 			this.handlers.put(Pattern.compile(uri), handler);
 			return this;
 		}
@@ -562,32 +565,38 @@ public class Web {
 		 */
 		@Override
 		public void execute(HttpRequest request) {
-			String path = request.path;
+			try {
 
-			RequestHandler handler = null;
+				String path = request.path;
 
-			for (Map.Entry<Pattern, RequestHandler> entry : handlers
-					.entrySet()) {
-				if (entry.getKey().matcher(path).matches()) {
-					try {
+				RequestHandler handler = null;
 
-						handler = (RequestHandler) entry.getValue();
-//								.newInstance();
-						handler.application = this;
-						handler.request = request;
-						handler.clear();
+				for (Map.Entry<Pattern, Class<T>> entry : handlers.entrySet()) {
+					if (entry.getKey().matcher(path).matches()) {
+						try {
 
-					} catch (Exception e) {
-						e.printStackTrace();
+							handler = (RequestHandler) entry.getValue()
+									.newInstance();
+							handler.application = this;
+							handler.request = request;
+							handler.clear();
+
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+						break;
 					}
-					break;
 				}
-			}
 
-			if (handler == null) {
-				// TODO handle not found.
+				if (handler == null) {
+					throw new HttpError(404, HttpCode.get(404), path);
+				}
+				handler.execute();
+
+			} catch (HttpError e) {
+				//TODO unable to send back a 404. :(
+				request.finish();
 			}
-			handler.execute();
 		}
 
 	}

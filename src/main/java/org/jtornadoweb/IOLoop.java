@@ -1,5 +1,7 @@
 package org.jtornadoweb;
 
+import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -9,6 +11,7 @@ import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -148,15 +151,10 @@ public class IOLoop {
 		}
 
 		private void _onAccept(SelectableChannel channel) throws Exception {
-			while (true) {
-				SocketChannel clientChannel = ((ServerSocketChannel) channel)
-						.accept();
-				if (clientChannel == null)
-					break;
-
-				onAccept(clientChannel);
-
-			}
+			SocketChannel clientChannel = ((ServerSocketChannel) channel)
+					.accept();
+			clientChannel.configureBlocking(false);
+			onAccept(clientChannel);
 
 		}
 
@@ -199,6 +197,19 @@ public class IOLoop {
 
 	}
 
+	public static class AddHandler {
+		EventHandler handler;
+		SelectableChannel chann;
+		int ops;
+
+		public AddHandler(EventHandler handler, SelectableChannel chann,
+				int opts) {
+			this.handler = handler;
+			this.chann = chann;
+			ops = opts;
+		}
+	}
+
 	/**
 	 * Default system selector. <b>EPoll is highly recommended.</b>
 	 */
@@ -208,6 +219,8 @@ public class IOLoop {
 	 * A pool received from the client of IOLoop.
 	 */
 	private final ExecutorService pool;
+
+	private final ConcurrentLinkedQueue<AddHandler> toAdd = new ConcurrentLinkedQueue<AddHandler>();
 
 	public IOLoop(ExecutorService pool) throws Exception {
 		this.pool = pool;
@@ -226,19 +239,11 @@ public class IOLoop {
 	 * @throws Exception
 	 */
 	public void start() throws Exception {
-		int pollTimeout = SELECT_TIMEOUT;
-		List<EventHandlerTask> pendingTasks = new LinkedList<IOLoop.EventHandlerTask>();
 		while (true) {
 
-			Iterator<EventHandlerTask> iterTask = pendingTasks.iterator();
-			while (iterTask.hasNext()) {
-				pool.execute(iterTask.next());
-				iterTask.remove();
-			}
-			Thread.yield();
-
-			if (!selector.selectedKeys().isEmpty() || !pool.isTerminated())
-				pollTimeout = MIN_SELECT_TIMEOUT;
+			//handlers registered from the previous interation or
+			//any point in time are added before this interation.
+			registerAddHandlers();
 
 			Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
 
@@ -246,25 +251,45 @@ public class IOLoop {
 				SelectionKey key = iter.next();
 				iter.remove();
 
-				if (key.isValid() && !key.isAcceptable()) {
-					EventHandlerTask task = new EventHandlerTask(
-							(EventHandler) key.attachment(), key.readyOps(),
-							key.channel());
-					this.removeHandler(key);
-					// Adds the task for the next iteration.
-					pendingTasks.add(task);
+				EventHandler attachment = (EventHandler) key.attachment();
+				int readyOps = key.readyOps();
+				SelectableChannel channel = key.channel();
+				boolean acceptable = key.isAcceptable();
+				removeHandler(key);
 
-				} else if (key.isValid()) {
-					/* Events other than accept is handled in another thread. */
-					((EventHandler) key.attachment()).handleEvents(
-							key.readyOps(), key.channel());
+				if (!acceptable) {
+					EventHandlerTask task = new EventHandlerTask(attachment,
+							readyOps, channel);
+					pool.execute(task);
+
+				} else {
+					//ACCEPT will be reattatcher to the ServerSocket channel
+					attachment.handleEvents(readyOps, channel);
 				}
 
 			}
 
-			selector.select(pollTimeout);
-			pollTimeout = IOLoop.SELECT_TIMEOUT;
+			selector.select();
 
+		}
+	}
+
+	/**
+	 * @throws IOException
+	 * @throws ClosedChannelException
+	 */
+	private void registerAddHandlers() throws IOException,
+			ClosedChannelException {
+		Iterator<AddHandler> addIter = toAdd.iterator();
+
+		while (addIter.hasNext()) {
+			AddHandler item = addIter.next();
+			addIter.remove();
+
+			if (item.chann.isOpen()) {
+				item.chann.configureBlocking(false);
+				item.chann.register(selector, item.ops, item.handler);
+			}
 		}
 	}
 
@@ -293,18 +318,21 @@ public class IOLoop {
 	 * @param opts
 	 * @throws Exception
 	 */
-	public void addHandler(AbstractSelectableChannel channel,
+	public void addHandler(SelectableChannel channel,
 			EventHandler eventHandler, int opts) throws Exception {
-		channel.configureBlocking(false);
-		if (channel.isRegistered()) {
-			if (channel.keyFor(selector).isValid()) {
-				selector.wakeup();
-				channel.register(selector, opts, eventHandler);
-			}
+		toAdd.offer(new AddHandler(eventHandler, channel, opts));
+		selector.wakeup();
 
-		} else {
-			channel.register(selector, opts, eventHandler);
-		}
+		// channel.configureBlocking(false);
+		// if (channel.isRegistered()) {
+		// if (channel.keyFor(selector).isValid()) {
+		// selector.wakeup();
+		// channel.register(selector, opts, eventHandler);
+		// }
+		//
+		// } else {
+		// channel.register(selector, opts, eventHandler);
+		// }
 
 	}
 }

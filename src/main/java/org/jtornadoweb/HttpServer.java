@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.logging.Logger;
 
 import org.jtornadoweb.IOLoop.EventHandlerAdapter;
@@ -61,20 +60,6 @@ public class HttpServer extends EventHandlerAdapter {
 
 	private final IOLoop loop;
 
-	@SuppressWarnings("unused")
-	private static class TFactory implements ThreadFactory {
-		private int count;
-
-		@Override
-		public Thread newThread(Runnable r) {
-			Thread thread = new Thread();
-			thread.setName("JTornado Task-" + count++);
-			thread.setPriority(Thread.NORM_PRIORITY);
-			return thread;
-		}
-
-	}
-
 	public HttpServer(RequestCallback requestCallback, boolean noKeepAlive,
 			IOLoop loop, boolean xHeaders) throws Exception {
 		if (requestCallback == null) {
@@ -90,7 +75,7 @@ public class HttpServer extends EventHandlerAdapter {
 		logger.info("Thread poll fixed in "
 				+ Runtime.getRuntime().availableProcessors() + " threads");
 		this.pool = Executors.newFixedThreadPool(Runtime.getRuntime()
-				.availableProcessors());
+				.availableProcessors() + 1, new JTornadoThreadFactory()) ;
 
 		this.loop = (loop == null ? new IOLoop(pool) : loop);
 	}
@@ -128,6 +113,8 @@ public class HttpServer extends EventHandlerAdapter {
 		IOStream stream = new IOStream((SocketChannel) channel, this.getLoop());
 		new HttpConnection(stream, ((SocketChannel) channel).socket()
 				.getInetAddress(), requestCallback, noKeepAlive, xHeaders);
+		this.getLoop().addHandler(serverSocketChannel, this, SelectionKey.OP_ACCEPT);
+
 	}
 
 	/**
